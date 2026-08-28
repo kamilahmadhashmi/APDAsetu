@@ -2,7 +2,7 @@
    AEGIS-MESH & EMERGE APP ORCHESTRATOR WITH TACTICAL DIALOG MANAGER
    ========================================================================== */
 
-import { getLang, setLang, t } from './i18n.js';
+import { getLang, setLang, t, i18nService } from './i18n.js';
 import { showSystemPrompt, showUltraEmergencyModal, closeModals } from './modals.js';
 import { renderGisDashboard } from './components/gis-map.js';
 import { renderAiVisionEngine } from './components/ai-vision.js';
