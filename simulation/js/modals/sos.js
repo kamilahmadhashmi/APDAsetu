@@ -2,10 +2,14 @@
    SMARTPHONE SIMULATOR — EMERGENCY SOS DISTRESS TRANSMISSION CHAIN
    Captures live person location, signs payload with AES-256, and simulates
    multi-hop BLE mesh relay to LoRa Gateway and Command Center.
+   Fully localized with reactive global multilingual translations.
    ========================================================================== */
 
 import { DEMO_PERSON } from '../data/demo-person.js';
 import { locationService } from '../services/location-service.js';
+import { i18nService, t } from '../services/i18n-service.js';
+
+let isTransmitting = false;
 
 export function renderSosModal(container, onClose) {
   const loc = locationService.getState();
@@ -24,8 +28,8 @@ export function renderSosModal(container, onClose) {
               <span class="material-symbols-outlined text-lg" style="font-variation-settings: 'FILL' 1;">sos</span>
             </div>
             <div>
-              <h3 class="text-xs font-black uppercase text-red-500 tracking-wider">ENCRYPTED DISTRESS SIGNAL</h3>
-              <span class="text-[9px] font-mono text-slate-400">AES-256 GCM &bull; BLE Mesh Protocol</span>
+              <h3 class="text-xs font-black uppercase text-red-500 tracking-wider" data-i18n="distress_title">${t('distress_title')}</h3>
+              <span class="text-[9px] font-mono text-slate-400" data-i18n="distress_protocol">${t('distress_protocol')}</span>
             </div>
           </div>
           <button id="btn-close-sos-x" class="text-slate-400 hover:text-white p-1">&times;</button>
@@ -54,8 +58,8 @@ export function renderSosModal(container, onClose) {
           <div id="step-queued" class="bg-slate-900 border border-slate-800 p-2 rounded-xl flex items-center gap-2.5 transition-all">
             <div class="w-5 h-5 rounded-full bg-amber-500/20 border border-amber-400 flex items-center justify-center text-[10px] font-mono font-bold text-amber-400">1</div>
             <div class="flex-1 text-[10px] font-mono">
-              <div class="text-slate-200 font-bold">1. DISTRESS QUEUED LOCALLY</div>
-              <div class="text-[8px] text-slate-400">Packet ${packetId} signed & stored offline</div>
+              <div class="text-slate-200 font-bold" data-i18n="distress_step1_title">${t('distress_step1_title')}</div>
+              <div class="text-[8px] text-slate-400" data-i18n="distress_step1_desc">${t('distress_step1_desc')}</div>
             </div>
             <span class="text-amber-400 text-[10px] font-mono animate-pulse">QUEUED</span>
           </div>
@@ -64,30 +68,30 @@ export function renderSosModal(container, onClose) {
           <div id="step-relay" class="bg-slate-900/40 border border-slate-800/40 p-2 rounded-xl flex items-center gap-2.5 opacity-40 transition-all">
             <div class="w-5 h-5 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center text-[10px] font-mono font-bold text-slate-400">2</div>
             <div class="flex-1 text-[10px] font-mono">
-              <div class="text-slate-400 font-bold">2. BLE MESH RELAY FOUND</div>
-              <div class="text-[8px] text-slate-500">Forwarded to Peer Node 0x4F2A (Hop 1)</div>
+              <div class="text-slate-400 font-bold" data-i18n="distress_step2_title">${t('distress_step2_title')}</div>
+              <div class="text-[8px] text-slate-500" data-i18n="distress_step2_desc">${t('distress_step2_desc')}</div>
             </div>
-            <span class="text-slate-500 text-[10px] font-mono">WAITING</span>
+            <span class="text-slate-500 text-[10px] font-mono" id="relay-status">WAITING</span>
           </div>
 
           <!-- Step 3: Gateway Discovered -->
           <div id="step-gateway" class="bg-slate-900/40 border border-slate-800/40 p-2 rounded-xl flex items-center gap-2.5 opacity-40 transition-all">
             <div class="w-5 h-5 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center text-[10px] font-mono font-bold text-slate-400">3</div>
             <div class="flex-1 text-[10px] font-mono">
-              <div class="text-slate-400 font-bold">3. LORA / SATELLITE GATEWAY</div>
-              <div class="text-[8px] text-slate-500">Uplink established via High Ground Hub</div>
+              <div class="text-slate-400 font-bold" data-i18n="distress_step3_title">${t('distress_step3_title')}</div>
+              <div class="text-[8px] text-slate-500" data-i18n="distress_step3_desc">${t('distress_step3_desc')}</div>
             </div>
-            <span class="text-slate-500 text-[10px] font-mono">WAITING</span>
+            <span class="text-slate-500 text-[10px] font-mono" id="gateway-status">WAITING</span>
           </div>
 
           <!-- Step 4: Command Center Received -->
           <div id="step-command" class="bg-slate-900/40 border border-slate-800/40 p-2 rounded-xl flex items-center gap-2.5 opacity-40 transition-all">
             <div class="w-5 h-5 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center text-[10px] font-mono font-bold text-slate-400">4</div>
             <div class="flex-1 text-[10px] font-mono">
-              <div class="text-slate-400 font-bold">4. COMMAND CENTER RECEIVED</div>
-              <div class="text-[8px] text-slate-500">Rescue dispatch ACK confirmed</div>
+              <div class="text-slate-400 font-bold" data-i18n="distress_step4_title">${t('distress_step4_title')}</div>
+              <div class="text-[8px] text-slate-500" data-i18n="distress_step4_desc">${t('distress_step4_desc')}</div>
             </div>
-            <span class="text-slate-500 text-[10px] font-mono">PENDING</span>
+            <span class="text-slate-500 text-[10px] font-mono" id="command-status">PENDING</span>
           </div>
 
         </div>
@@ -95,84 +99,99 @@ export function renderSosModal(container, onClose) {
         <!-- Transmit Action Button -->
         <button id="btn-execute-broadcast" class="w-full bg-red-600 hover:bg-red-500 text-white py-3 rounded-xl text-xs font-black uppercase tracking-wider shadow-[0_0_20px_rgba(239,68,68,0.5)] flex items-center justify-center gap-2 transition-all active:scale-95">
           <span class="material-symbols-outlined text-base">podcasts</span>
-          <span>TRANSMIT DISTRESS PACKET</span>
+          <span data-i18n="transmit_distress_btn">${t('transmit_distress_btn')}</span>
         </button>
 
-        <button id="btn-cancel-sos" class="w-full bg-slate-900 hover:bg-slate-800 text-slate-400 py-2 rounded-xl text-[10px] font-bold uppercase transition-all">
-          CLOSE
-        </button>
+        <p class="text-[9px] text-center text-slate-400 font-mono" data-i18n="demo_data_notice">
+          ${t('demo_data_notice')}
+        </p>
 
       </div>
     </div>
   `;
 
-  // Attach handlers
+  // Attach events
   const close = () => {
-    container.innerHTML = '';
-    if (onClose) onClose();
+    onClose();
   };
 
-  container.querySelector('#btn-close-sos-backdrop')?.addEventListener('click', close);
-  container.querySelector('#btn-close-sos-x')?.addEventListener('click', close);
-  container.querySelector('#btn-cancel-sos')?.addEventListener('click', close);
+  document.getElementById('btn-close-sos-backdrop')?.addEventListener('click', close);
+  document.getElementById('btn-close-sos-x')?.addEventListener('click', close);
 
-  const btnBroadcast = container.querySelector('#btn-execute-broadcast');
+  document.getElementById('btn-execute-broadcast')?.addEventListener('click', () => {
+    if (isTransmitting) return;
+    isTransmitting = true;
 
-  btnBroadcast?.addEventListener('click', () => {
-    btnBroadcast.disabled = true;
-    btnBroadcast.className = 'w-full bg-slate-800 text-slate-400 py-3 rounded-xl text-xs font-black uppercase tracking-wider flex items-center justify-center gap-2 cursor-not-allowed';
-    btnBroadcast.innerHTML = '<span class="w-3 h-3 rounded-full border-2 border-slate-400 border-t-transparent animate-spin"></span> BROADCASTING ACROSS MESH...';
-
-    // Step 1: Queued (instant)
-    const s1 = container.querySelector('#step-queued');
-    if (s1) {
-      s1.querySelector('span').textContent = 'CONFIRMED ✓';
-      s1.querySelector('span').className = 'text-emerald-400 text-[10px] font-mono font-bold';
+    const btn = document.getElementById('btn-execute-broadcast');
+    if (btn) {
+      btn.innerHTML = `<span class="material-symbols-outlined text-base animate-spin">refresh</span> <span>${t('broadcast_in_progress')}</span>`;
+      btn.classList.remove('bg-red-600', 'hover:bg-red-500');
+      btn.classList.add('bg-slate-700');
     }
 
-    // Step 2: Relay Found (after 600ms)
+    // Step 2 Progression (1.0s)
     setTimeout(() => {
-      const s2 = container.querySelector('#step-relay');
-      if (s2) {
-        s2.className = 'bg-slate-900 border border-purple-500/50 p-2 rounded-xl flex items-center gap-2.5 transition-all';
-        s2.querySelector('.w-5').className = 'w-5 h-5 rounded-full bg-purple-500/20 border border-purple-400 flex items-center justify-center text-[10px] font-mono font-bold text-purple-400';
-        s2.querySelector('.text-slate-400').className = 'text-slate-200 font-bold';
-        s2.querySelector('span').textContent = 'RELAYED ✓';
-        s2.querySelector('span').className = 'text-purple-400 text-[10px] font-mono font-bold';
+      const stepRelay = document.getElementById('step-relay');
+      const relayStatus = document.getElementById('relay-status');
+      if (stepRelay) {
+        stepRelay.className = 'bg-slate-900 border border-sky-500 p-2 rounded-xl flex items-center gap-2.5 transition-all';
+        stepRelay.querySelector('div')?.classList.replace('bg-slate-800', 'bg-sky-500/20');
+        stepRelay.querySelector('div')?.classList.replace('text-slate-400', 'text-sky-400');
+        stepRelay.querySelector('div')?.classList.replace('border-slate-700', 'border-sky-400');
+        stepRelay.querySelector('.text-slate-400')?.classList.replace('text-slate-400', 'text-slate-200');
       }
-    }, 600);
+      if (relayStatus) {
+        relayStatus.className = 'text-sky-400 text-[10px] font-mono font-bold';
+        relayStatus.textContent = 'RELAYED (Hop 1)';
+      }
+    }, 1000);
 
-    // Step 3: Gateway Discovered (after 1200ms)
+    // Step 3 Progression (2.2s)
     setTimeout(() => {
-      const s3 = container.querySelector('#step-gateway');
-      if (s3) {
-        s3.className = 'bg-slate-900 border border-cyan-500/50 p-2 rounded-xl flex items-center gap-2.5 transition-all';
-        s3.querySelector('.w-5').className = 'w-5 h-5 rounded-full bg-cyan-500/20 border border-cyan-400 flex items-center justify-center text-[10px] font-mono font-bold text-cyan-400';
-        s3.querySelector('.text-slate-400').className = 'text-slate-200 font-bold';
-        s3.querySelector('span').textContent = 'UPLINKED ✓';
-        s3.querySelector('span').className = 'text-cyan-400 text-[10px] font-mono font-bold';
+      const stepGateway = document.getElementById('step-gateway');
+      const gatewayStatus = document.getElementById('gateway-status');
+      if (stepGateway) {
+        stepGateway.className = 'bg-slate-900 border border-purple-500 p-2 rounded-xl flex items-center gap-2.5 transition-all';
+        stepGateway.querySelector('div')?.classList.replace('bg-slate-800', 'bg-purple-500/20');
+        stepGateway.querySelector('div')?.classList.replace('text-slate-400', 'text-purple-400');
+        stepGateway.querySelector('div')?.classList.replace('border-slate-700', 'border-purple-400');
+        stepGateway.querySelector('.text-slate-400')?.classList.replace('text-slate-400', 'text-slate-200');
       }
-    }, 1200);
+      if (gatewayStatus) {
+        gatewayStatus.className = 'text-purple-400 text-[10px] font-mono font-bold';
+        gatewayStatus.textContent = 'UPLINKED (LoRa/Sat)';
+      }
+    }, 2200);
 
-    // Step 4: Command Center Received (after 1800ms)
+    // Step 4 Progression (3.4s)
     setTimeout(() => {
-      const s4 = container.querySelector('#step-command');
-      if (s4) {
-        s4.className = 'bg-slate-900 border-2 border-emerald-500 p-2 rounded-xl flex items-center gap-2.5 transition-all shadow-lg';
-        s4.querySelector('.w-5').className = 'w-5 h-5 rounded-full bg-emerald-500/20 border border-emerald-400 flex items-center justify-center text-[10px] font-mono font-bold text-emerald-400';
-        s4.querySelector('.text-slate-400').className = 'text-white font-bold';
-        s4.querySelector('span').textContent = 'ACKNOWLEDGED ✓';
-        s4.querySelector('span').className = 'text-emerald-400 text-[10px] font-mono font-black animate-pulse';
+      const stepCommand = document.getElementById('step-command');
+      const commandStatus = document.getElementById('command-status');
+      if (stepCommand) {
+        stepCommand.className = 'bg-slate-900 border border-emerald-500 p-2 rounded-xl flex items-center gap-2.5 transition-all';
+        stepCommand.querySelector('div')?.classList.replace('bg-slate-800', 'bg-emerald-500/20');
+        stepCommand.querySelector('div')?.classList.replace('text-slate-400', 'text-emerald-400');
+        stepCommand.querySelector('div')?.classList.replace('border-slate-700', 'border-emerald-400');
+        stepCommand.querySelector('.text-slate-400')?.classList.replace('text-slate-400', 'text-slate-200');
+      }
+      if (commandStatus) {
+        commandStatus.className = 'text-emerald-400 text-[10px] font-mono font-bold';
+        commandStatus.textContent = 'ACK RECEIVED';
       }
 
-      // Transmit to Central Location Service & BroadcastChannel
+      if (btn) {
+        btn.innerHTML = `<span class="material-symbols-outlined text-base">check_circle</span> <span>${t('rescue_confirmed')}</span>`;
+        btn.classList.remove('bg-slate-700');
+        btn.classList.add('bg-emerald-600');
+      }
+
+      // Transmit to Central Location Service & Command Center
       locationService.transmitDistressPacket({
-        situation: `Citizen Distress Broadcast — ${DEMO_PERSON.name} (${DEMO_PERSON.deviceId})`,
-        notes: `Emergency Beacon locked to user GPS. Medical Note: ${DEMO_PERSON.medicalAlert}. Blood: ${DEMO_PERSON.bloodGroup}.`
+        situation: 'Field Evacuation Emergency SOS',
+        notes: `Device ${DEMO_PERSON.deviceId} (${DEMO_PERSON.name}). Blood Group: ${DEMO_PERSON.bloodGroup}. Medical: ${DEMO_PERSON.medicalNotes}`
       });
 
-      btnBroadcast.className = 'w-full bg-emerald-600 text-white py-3 rounded-xl text-xs font-black uppercase tracking-wider flex items-center justify-center gap-2 shadow-lg';
-      btnBroadcast.innerHTML = '<span class="material-symbols-outlined text-base">verified</span> RESCUE DISPATCH CONFIRMED';
-    }, 1800);
+      isTransmitting = false;
+    }, 3400);
   });
 }

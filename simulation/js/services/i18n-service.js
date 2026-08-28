@@ -1,6 +1,5 @@
 /* ==========================================================================
-   AEGIS-MESH / EMERGE — i18n ADAPTER LAYER
-   Re-exports from central i18nService for backward compatibility.
+   RESQNET SMARTPHONE SIMULATOR — GLOBAL i18n SERVICE (STANDALONE MIRROR)
    ========================================================================== */
 
 export {
@@ -10,4 +9,4 @@ export {
   t,
   getLang,
   setLang
-} from './services/i18n-service.js';
+} from '../../../src/services/i18n-service.js';

@@ -29,17 +29,19 @@ document.addEventListener('DOMContentLoaded', () => {
 
 function initLanguageSwitcher() {
   const select = document.getElementById('sel-lang-switch');
-  if (!select) return;
+  if (select) {
+    select.value = getLang();
+    select.addEventListener('change', (e) => {
+      setLang(e.target.value);
+    });
+  }
 
-  select.value = getLang();
-
-  select.addEventListener('change', (e) => {
-    const newLang = e.target.value;
-    setLang(newLang);
+  // Subscribe to reactive language changes across all tabs/windows
+  i18nService.subscribe((newLang) => {
+    if (select && select.value !== newLang) select.value = newLang;
     applyLanguage(newLang);
-    
-    // Re-mount current view to update dynamic translations
-    mountView(currentViewId);
+    // Notify custom views of language change
+    window.dispatchEvent(new CustomEvent('resqnet-language-changed', { detail: { language: newLang } }));
   });
 }
 
