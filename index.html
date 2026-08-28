@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+  <title>EMERGE | AEGIS-MESH Emergency Disaster Dispatch</title>
+
+  <!-- Favicon -->
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>⚡</text></svg>">
+
+  <!-- Google Fonts & Material Symbols -->
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Noto+Sans+Devanagari:wght@400;600;700&family=Noto+Sans+Oriya:wght@400;600;700&display=swap" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+
+  <!-- Leaflet GIS Map CSS & JS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+
+  <!-- Lucide Icons & Chart.js -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+  
+  <!-- Tailwind Config injected from design system -->
+  <script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          "colors": {
+            "on-error-container": "#93000a",
+            "surface": "#f9f9ff",
+            "secondary-fixed": "#e2e2e2",
+            "surface-container-lowest": "#ffffff",
+            "on-tertiary-fixed-variant": "#474747",
+            "tertiary-fixed": "#e2e2e2",
+            "primary": "#000000",
+            "on-secondary-fixed": "#1a1c1c",
+            "secondary": "#5d5f5f",
+            "inverse-on-surface": "#ebf1ff",
+            "primary-fixed-dim": "#c6c6c6",
+            "surface-bright": "#f9f9ff",
+            "on-primary": "#ffffff",
+            "on-tertiary": "#ffffff",
+            "tertiary-container": "#1b1b1b",
+            "on-secondary-fixed-variant": "#454747",
+            "outline-variant": "#cfc4c5",
+            "primary-container": "#1b1b1b",
+            "inverse-surface": "#2a313d",
+            "surface-container-low": "#f0f3ff",
+            "secondary-fixed-dim": "#c6c6c7",
+            "tertiary": "#000000",
+            "on-surface": "#151c27",
+            "on-surface-variant": "#4c4546",
+            "on-secondary": "#ffffff",
+            "surface-container": "#e7eefe",
+            "secondary-container": "#dfe0e0",
+            "background": "#f9f9ff",
+            "outline": "#7e7576",
+            "surface-container-high": "#e2e8f8",
+            "on-primary-fixed-variant": "#474747",
+            "on-error": "#ffffff",
+            "surface-dim": "#d3daea",
+            "surface-tint": "#5e5e5e",
+            "tertiary-fixed-dim": "#c6c6c6",
+            "primary-fixed": "#e2e2e2",
+            "error": "#ba1a1a",
+            "on-tertiary-fixed": "#1b1b1b",
+            "inverse-primary": "#c6c6c6",
+            "surface-variant": "#dce2f3",
+            "on-secondary-container": "#616363",
+            "error-container": "#ffdad6",
+            "on-primary-fixed": "#1b1b1b",
+            "on-tertiary-container": "#848484",
+            "on-background": "#151c27",
+            "surface-container-highest": "#dce2f3",
+            "on-primary-container": "#848484"
+          },
+          "borderRadius": {
+            "DEFAULT": "0.125rem",
+            "lg": "0.25rem",
+            "xl": "0.5rem",
+            "full": "0.75rem"
+          },
+          "fontFamily": {
+            "body-md": ["Inter", "Noto Sans Devanagari", "Noto Sans Oriya", "sans-serif"],
+            "headline-md": ["Inter", "Noto Sans Devanagari", "Noto Sans Oriya", "sans-serif"]
+          }
+        }
+      }
+    }
+  </script>
+
+  <link rel="stylesheet" href="src/styles/main.css"/>
+</head>
+<body class="bg-surface-container-lowest text-on-surface font-body-md h-screen w-full flex overflow-hidden antialiased selection:bg-primary selection:text-on-primary">
+
+  <!-- SideNavBar Component -->
+  <nav class="w-64 h-screen border-r border-outline-variant bg-surface flex flex-col h-full py-4 gap-2 z-40 hidden md:flex shrink-0">
+    <!-- Header -->
+    <div class="px-6 pb-6 pt-2 border-b border-outline-variant">
+      <h1 class="text-xl font-bold text-primary tracking-tight" data-i18n="dispatch_center">Dispatch Center</h1>
+      <div class="flex items-center gap-3 mt-4">
+        <div class="w-8 h-8 rounded-full bg-secondary-container flex items-center justify-center shrink-0">
+          <span class="material-symbols-outlined text-primary" style="font-variation-settings: 'FILL' 1; font-size: 18px;">admin_panel_settings</span>
+        </div>
+        <div>
+          <p class="text-xs font-semibold text-primary uppercase tracking-wider" data-i18n="sys_admin">System Administrator</p>
+          <p class="text-xs text-on-surface-variant flex items-center gap-1">
+            <span class="w-2 h-2 rounded-full bg-emerald-500 block animate-pulse"></span> <span data-i18n="active_session">Active Session</span>
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Navigation Tabs -->
+    <div class="flex-1 overflow-y-auto py-2 px-2 flex flex-col gap-1">
+      <a class="nav-sidebar-tab active flex items-center gap-3 px-4 py-3 bg-primary text-on-primary rounded-none cursor-pointer transition-all" data-tab="gis-dashboard" href="#">
+        <span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">report_problem</span>
+        <span class="text-xs font-semibold uppercase tracking-wider" data-i18n="tab_incidents">Incidents (GIS Map)</span>
+      </a>
+      <a class="nav-sidebar-tab flex items-center gap-3 px-4 py-3 text-on-surface-variant hover:bg-secondary-container transition-all cursor-pointer rounded-none" data-tab="ai-vision" href="#">
+        <span class="material-symbols-outlined">eye</span>
+        <span class="text-xs font-semibold uppercase tracking-wider" data-i18n="tab_vision">AI / YOLOv8 Vision</span>
+      </a>
+      <a class="nav-sidebar-tab flex items-center gap-3 px-4 py-3 text-on-surface-variant hover:bg-secondary-container transition-all cursor-pointer rounded-none" data-tab="mesh-network" href="#">
+        <span class="material-symbols-outlined">podcasts</span>
+        <span class="text-xs font-semibold uppercase tracking-wider" data-i18n="tab_mesh">BLE Mesh Broadcast</span>
+      </a>
+      <a class="nav-sidebar-tab flex items-center gap-3 px-4 py-3 text-on-surface-variant hover:bg-secondary-container transition-all cursor-pointer rounded-none" data-tab="routing-solver" href="#">
+        <span class="material-symbols-outlined">navigation</span>
+        <span class="text-xs font-semibold uppercase tracking-wider" data-i18n="tab_solver">Dispatch Solver</span>
+      </a>
+      <a class="nav-sidebar-tab flex items-center gap-3 px-4 py-3 text-on-surface-variant hover:bg-secondary-container transition-all cursor-pointer rounded-none" data-tab="architecture" href="#">
+        <span class="material-symbols-outlined">memory</span>
+        <span class="text-xs font-semibold uppercase tracking-wider" data-i18n="tab_arch">System Architecture</span>
+      </a>
+    </div>
+
+    <!-- CTA & Footer -->
+    <div class="p-4 mt-auto border-t border-outline-variant flex flex-col gap-4">
+      <button class="w-full bg-error text-on-error py-3 px-4 flex items-center justify-center gap-2 hover:bg-red-700 transition-colors font-bold uppercase tracking-wider" onclick="document.getElementById('sos-modal').classList.remove('hidden')">
+        <span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">sos</span>
+        <span data-i18n="sos_btn">EMERGENCY SOS</span>
+      </button>
+      <div class="flex flex-col gap-1">
+        <a class="flex items-center gap-3 px-2 py-1 text-on-surface-variant hover:bg-secondary-container transition-all cursor-pointer" href="#" id="btn-support-link">
+          <span class="material-symbols-outlined" style="font-size: 18px;">help</span>
+          <span class="text-xs uppercase tracking-wider" data-i18n="support">Support</span>
+        </a>
+        <a class="flex items-center gap-3 px-2 py-1 text-on-surface-variant hover:bg-secondary-container transition-all cursor-pointer" href="#" id="btn-logs-link">
+          <span class="material-symbols-outlined" style="font-size: 18px;">history</span>
+          <span class="text-xs uppercase tracking-wider" data-i18n="logs">Logs</span>
+        </a>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Main Content Shell -->
+  <div class="flex-1 flex flex-col h-screen min-w-0 bg-surface-container-lowest">
+    
+    <!-- TopNavBar Component -->
+    <header class="w-full h-16 border-b border-outline-variant bg-surface flex justify-between items-center px-6 sticky top-0 z-50 shrink-0">
+      <!-- Brand Logo & Title -->
+      <div class="flex items-center gap-8 h-full">
+        <span class="text-2xl font-bold tracking-tighter text-primary flex items-center gap-2">
+          <span id="brand-logo-text" data-i18n="brand_name">EMERGE</span> 
+          <span class="text-xs font-mono font-normal tracking-normal px-2 py-0.5 bg-black text-white rounded" id="brand-tag-text" data-i18n="brand_tag">AEGIS-MESH</span>
+        </span>
+        
+        <!-- Main Top Nav Links -->
+        <nav class="hidden lg:flex items-center gap-6 h-full pt-1">
+          <a class="nav-top-link text-primary border-b-2 border-primary h-full flex items-center px-2 text-xs font-semibold uppercase tracking-wider cursor-pointer" data-tab="gis-dashboard" data-i18n="tab_dashboard" href="#">Dashboard & Map</a>
+          <a class="nav-top-link text-on-surface-variant hover:text-primary transition-colors h-full flex items-center px-2 text-xs font-semibold uppercase tracking-wider cursor-pointer" data-tab="ai-vision" data-i18n="tab_vision" href="#">AI Vision</a>
+          <a class="nav-top-link text-on-surface-variant hover:text-primary transition-colors h-full flex items-center px-2 text-xs font-semibold uppercase tracking-wider cursor-pointer" data-tab="mesh-network" data-i18n="tab_mesh" href="#">BLE Mesh Comms</a>
+          <a class="nav-top-link text-on-surface-variant hover:text-primary transition-colors h-full flex items-center px-2 text-xs font-semibold uppercase tracking-wider cursor-pointer" data-tab="routing-solver" data-i18n="tab_solver" href="#">Logistics Solver</a>
+          <a class="nav-top-link text-on-surface-variant hover:text-primary transition-colors h-full flex items-center px-2 text-xs font-semibold uppercase tracking-wider cursor-pointer" data-tab="architecture" data-i18n="tab_arch" href="#">Architecture</a>
+        </nav>
+      </div>
+
+      <!-- Trailing Status & Language Switcher Actions -->
+      <div class="flex items-center gap-4 h-full">
+        <!-- Language Switcher Button -->
+        <div class="flex items-center gap-1 border border-outline-variant px-2 py-1 bg-surface-container-low">
+          <span class="material-symbols-outlined text-primary" style="font-size: 18px;">language</span>
+          <select id="sel-lang-switch" class="bg-transparent text-xs font-bold text-primary outline-none cursor-pointer uppercase">
+            <option value="en">English</option>
+            <option value="hi">हिंदी (Hindi)</option>
+            <option value="or">ଓଡ଼ିଆ (Odia)</option>
+          </select>
+        </div>
+
+        <div class="flex items-center gap-4 hidden sm:flex">
+          <div class="flex items-center gap-2 px-3 py-1 border border-outline-variant rounded-none bg-surface-container-low">
+            <span class="w-2 h-2 rounded-full bg-emerald-500 block animate-pulse"></span>
+            <span class="text-xs font-bold uppercase text-primary" data-i18n="mesh_relay_active">Mesh Relay Active</span>
+          </div>
+          <span class="text-xs text-on-surface-variant uppercase">FastAPI: <strong class="text-emerald-600" id="hdr-gateway-status">14.2ms</strong></span>
+        </div>
+        <div class="w-px h-6 bg-outline-variant hidden sm:block"></div>
+        <div class="flex items-center gap-2">
+          <button class="w-10 h-10 flex items-center justify-center rounded-none text-on-surface-variant hover:bg-secondary-container hover:text-primary transition-colors cursor-pointer" id="btn-notifications-top">
+            <span class="material-symbols-outlined">notifications</span>
+          </button>
+          <button class="w-10 h-10 flex items-center justify-center rounded-none text-on-surface-variant hover:bg-secondary-container hover:text-primary transition-colors cursor-pointer" onclick="document.getElementById('sos-modal').classList.remove('hidden')">
+            <span class="material-symbols-outlined">account_circle</span>
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <!-- Dynamic Content View Area -->
+    <main class="flex-1 relative overflow-hidden bg-surface-container-low">
+      
+      <!-- 1. GIS Dashboard View Panel -->
+      <section id="gis-dashboard" class="view-panel active w-full h-full">
+        <!-- Rendered dynamically by src/components/gis-map.js -->
+      </section>
+
+      <!-- 2. AI Vision Engine Panel -->
+      <section id="ai-vision" class="view-panel w-full h-full">
+        <!-- Rendered dynamically by src/components/ai-vision.js -->
+      </section>
+
+      <!-- 3. Mesh Network Comms Panel -->
+      <section id="mesh-network" class="view-panel w-full h-full">
+        <!-- Rendered dynamically by src/components/mesh-network.js -->
+      </section>
+
+      <!-- 4. Logistics Routing Solver Panel -->
+      <section id="routing-solver" class="view-panel w-full h-full">
+        <!-- Rendered dynamically by src/components/routing-solver.js -->
+      </section>
+
+      <!-- 5. System Architecture Panel -->
+      <section id="architecture" class="view-panel w-full h-full">
+        <!-- Rendered dynamically by src/components/architecture.js -->
+      </section>
+
+    </main>
+  </div>
+
+  <!-- Send SOS Modal -->
+  <div class="fixed inset-0 z-[99999] hidden" id="sos-modal">
+    <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" onclick="document.getElementById('sos-modal').classList.add('hidden')"></div>
+    <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-md bg-surface-container-lowest border-2 border-primary p-6 shadow-2xl rounded-none z-10">
+      <div class="flex justify-between items-start mb-6 border-b border-outline-variant pb-4">
+        <div>
+          <h2 class="text-3xl font-extrabold text-error tracking-tighter leading-none mb-1" data-i18n="sos_btn">EMERGENCY SOS</h2>
+          <p class="text-xs text-on-surface-variant uppercase tracking-widest font-semibold">BLE Mesh Telemetry Broadcast</p>
+        </div>
+        <button class="text-primary hover:bg-secondary-container p-1 transition-colors rounded-none" onclick="document.getElementById('sos-modal').classList.add('hidden')">
+          <span class="material-symbols-outlined text-primary" style="font-size: 28px;">close</span>
+        </button>
+      </div>
+
+      <form class="flex flex-col gap-4" id="sos-form">
+        <div class="flex flex-col gap-1">
+          <label class="text-xs font-bold uppercase text-primary tracking-wider">Location / Coordinates</label>
+          <input id="sos-coords-input" class="w-full bg-surface border border-outline-variant p-3 text-sm text-primary font-mono outline-none" readonly type="text" value="20.2961° N, 85.8245° E (Sector B4 Flood Zone)" />
+        </div>
+        <div class="flex flex-col gap-1">
+          <label class="text-xs font-bold uppercase text-primary tracking-wider">Situation Type</label>
+          <select class="w-full bg-surface border border-outline-variant p-3 text-sm text-primary outline-none cursor-pointer" id="sos-type">
+            <option>Stranded Victim - Immediate Airlift Needed</option>
+            <option>Medical Emergency / Trauma</option>
+            <option>Submerged Vehicle / Rooftop Rescue</option>
+            <option>Structural Collapse Hazard</option>
+          </select>
+        </div>
+        <div class="flex flex-col gap-1">
+          <label class="text-xs font-bold uppercase text-primary tracking-wider">Additional Details</label>
+          <textarea class="w-full bg-surface-container-lowest border border-outline-variant p-3 text-sm text-primary outline-none resize-none" id="sos-details" placeholder="Number of victims, medical needs, device battery level..." rows="3"></textarea>
+        </div>
+        <button class="w-full bg-error text-on-error py-4 text-base font-bold uppercase tracking-wider hover:bg-red-700 transition-colors flex justify-center items-center gap-2 mt-2" type="submit">
+          <span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">send</span>
+          Transmit BLE Mesh Distress Packet
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- LEVEL A: SYSTEM COMMUNICATION PROMPT MODAL -->
+  <div class="fixed inset-0 z-[99999] hidden" id="sys-prompt-modal">
+    <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" onclick="window.closeModals()"></div>
+    <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-lg bg-surface-container-lowest border-2 border-black p-6 shadow-2xl rounded-none z-10">
+      <div class="flex justify-between items-center mb-4 border-b border-outline-variant pb-3">
+        <div class="flex items-center gap-3">
+          <div class="w-8 h-8 bg-black text-white flex items-center justify-center font-bold">
+            <span class="material-symbols-outlined" style="font-size: 20px;">info</span>
+          </div>
+          <div>
+            <h3 class="text-lg font-bold text-primary tracking-tight" id="sys-prompt-title">System Communication</h3>
+            <span class="text-xs text-on-surface-variant font-mono uppercase">EMERGE PROTOCOL DISPATCH</span>
+          </div>
+        </div>
+        <button class="text-primary hover:bg-secondary-container p-1 transition-colors" onclick="window.closeModals()">
+          <span class="material-symbols-outlined">close</span>
+        </button>
+      </div>
+
+      <div class="my-4">
+        <p class="text-sm text-primary leading-relaxed font-medium mb-3" id="sys-prompt-msg">System update communication message.</p>
+        <div class="hidden bg-slate-900 text-cyan-400 font-mono text-xs p-3 border border-slate-700 rounded-none overflow-x-auto">
+          <pre id="sys-prompt-details"></pre>
+        </div>
+      </div>
+
+      <div class="flex justify-end gap-2 mt-6 pt-3 border-t border-outline-variant">
+        <button class="bg-black text-white px-6 py-2 text-xs font-bold uppercase tracking-wider hover:bg-gray-800 transition-colors" onclick="window.closeModals()">
+          Acknowledge Communication
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- LEVEL B: ULTRA EMERGENCY ALERT MODAL -->
+  <div class="fixed inset-0 z-[99999] hidden" id="ultra-emergency-modal">
+    <div class="absolute inset-0 bg-red-950/70 backdrop-blur-md" onclick="window.closeModals()"></div>
+    <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-xl bg-slate-950 border-4 border-red-600 p-6 shadow-[0_0_50px_rgba(239,68,68,0.5)] rounded-none z-10 animate-ultra-pulse">
+      
+      <!-- Top Alert Header -->
+      <div class="flex justify-between items-center mb-4 border-b border-red-800/80 pb-3">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 bg-red-600 text-white flex items-center justify-center font-bold animate-bounce">
+            <span class="material-symbols-outlined" style="font-size: 26px; font-variation-settings: 'FILL' 1;">warning</span>
+          </div>
+          <div>
+            <div class="flex items-center gap-2">
+              <span class="bg-red-600 text-white text-[10px] font-black px-2 py-0.5 uppercase tracking-widest" id="ultra-modal-prio">P1 ULTRA CRITICAL</span>
+              <span class="text-red-400 font-mono text-xs font-bold animate-pulse">● BROADCASTING MESH RELAY</span>
+            </div>
+            <h2 class="text-xl font-extrabold text-white tracking-tight mt-0.5" id="ultra-modal-title">ULTRA EMERGENCY ALERT</h2>
+          </div>
+        </div>
+        <button class="text-red-400 hover:bg-red-900/50 p-1 transition-colors" onclick="window.closeModals()">
+          <span class="material-symbols-outlined">close</span>
+        </button>
+      </div>
+
+      <!-- Emergency Details Grid -->
+      <div class="my-4 space-y-4">
+        <div class="bg-red-950/50 border border-red-800/60 p-4 rounded-none">
+          <p class="text-base font-semibold text-white leading-relaxed mb-2" id="ultra-modal-msg">Ultra emergency alert broadcast.</p>
+          <div class="flex items-center gap-2 text-xs font-mono text-red-300">
+            <span class="material-symbols-outlined text-sm">location_on</span>
+            <span>COORDINATES: <strong id="ultra-modal-loc" class="text-white">20.2961° N, 85.8245° E</strong></span>
+          </div>
+        </div>
+
+        <div class="hidden bg-black/80 border border-red-900/80 p-3 font-mono text-xs text-red-400 overflow-x-auto">
+          <div class="text-[10px] text-gray-500 mb-1">// DECRYPTED EMERGENCY PACKET HASH</div>
+          <pre id="ultra-modal-details"></pre>
+        </div>
+      </div>
+
+      <!-- Action Footer -->
+      <div class="flex items-center justify-between mt-6 pt-4 border-t border-red-900/80">
+        <span class="text-xs font-mono text-red-400">ENCRYPTION: AES-256-GCM</span>
+        <div class="flex gap-3">
+          <button class="border border-red-600 text-red-400 px-4 py-2 text-xs font-bold uppercase hover:bg-red-950 transition-colors" onclick="window.closeModals()">
+            Dismiss
+          </button>
+          <button class="bg-red-600 text-white px-6 py-2 text-xs font-extrabold uppercase tracking-wider hover:bg-red-700 shadow-[0_0_15px_rgba(239,68,68,0.6)] transition-all flex items-center gap-2" onclick="window.closeModals()">
+            <span class="material-symbols-outlined" style="font-size: 16px;">send</span> CONFIRM DISPATCH RELAY
+          </button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <script type="module" src="src/app.js"></script>
+</body>
+</html>

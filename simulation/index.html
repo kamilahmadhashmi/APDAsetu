@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>RESQNET — Smartphone Emergency Evacuation Simulator</title>
+
+  <!-- Favicon -->
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📱</text></svg>">
+
+  <!-- Google Fonts & Material Symbols -->
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Noto+Sans+Devanagari:wght@400;600;700&family=Noto+Sans+Oriya:wght@400;600;700&display=swap" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+
+  <!-- Leaflet GIS Map CSS & JS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+
+  <!-- Custom Simulation Styles -->
+  <link rel="stylesheet" href="css/smartphone.css"/>
+</head>
+<body class="h-full w-full bg-slate-950 text-slate-100 font-sans antialiased overflow-hidden flex flex-col justify-between select-none">
+  
+  <!-- DESKTOP PRESENTATION HEADER -->
+  <header class="w-full h-16 border-b border-slate-800 bg-slate-900/90 backdrop-blur-md px-6 flex items-center justify-between shrink-0 z-50">
+    <div class="flex items-center gap-3">
+      <div class="w-9 h-9 rounded-xl bg-emerald-600/20 border border-emerald-500/50 flex items-center justify-center text-emerald-400 shadow-md">
+        <span class="material-symbols-outlined text-xl" style="font-variation-settings: 'FILL' 1;">smartphone</span>
+      </div>
+      <div>
+        <h1 class="text-sm font-extrabold tracking-tight text-white flex items-center gap-2">
+          RESQNET
+          <span class="text-[10px] font-mono font-bold bg-emerald-600 text-white px-2 py-0.5 rounded">EVACUATION SIMULATOR</span>
+        </h1>
+        <p class="text-[11px] text-slate-400">Field Operator Device: <strong class="text-white">Arjun Sharma (FIELD-104)</strong> &bull; Deterministic Demo Data</p>
+      </div>
+    </div>
+
+    <!-- Quick Flow Trigger Controls -->
+    <div class="hidden md:flex items-center gap-2.5">
+      <button id="ctrl-trigger-sos" class="bg-red-600 hover:bg-red-700 text-white px-3 py-1.5 rounded-lg text-xs font-black uppercase tracking-wider flex items-center gap-1.5 transition-all shadow-md active:scale-95">
+        <span class="material-symbols-outlined text-base" style="font-variation-settings: 'FILL' 1;">sos</span>
+        Simulate SOS
+      </button>
+
+      <button id="ctrl-tab-map" class="bg-emerald-700 hover:bg-emerald-600 text-white px-3 py-1.5 rounded-lg text-xs font-bold uppercase flex items-center gap-1.5 transition-all">
+        <span class="material-symbols-outlined text-base">map</span>
+        Evac Map
+      </button>
+
+      <button id="ctrl-tab-safety" class="bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all">
+        <span class="material-symbols-outlined text-base">security</span>
+        Safety Status
+      </button>
+
+      <button id="ctrl-tab-mesh" class="bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all">
+        <span class="material-symbols-outlined text-base">podcasts</span>
+        BLE Mesh
+      </button>
+
+      <!-- Language Selector -->
+      <div class="flex items-center gap-1 bg-slate-800 border border-slate-700 px-2.5 py-1 rounded-lg">
+        <span class="material-symbols-outlined text-slate-400 text-base">language</span>
+        <select id="sim-lang-switch" class="bg-transparent text-xs font-bold text-slate-200 outline-none cursor-pointer uppercase">
+          <option value="en">English</option>
+          <option value="hi">हिंदी (Hindi)</option>
+          <option value="or">ଓଡ଼ିଆ (Odia)</option>
+        </select>
+      </div>
+    </div>
+  </header>
+
+  <!-- CENTERED SMARTPHONE SIMULATION CONTAINER -->
+  <main class="flex-1 w-full flex items-center justify-center p-4 relative overflow-hidden bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-slate-900 via-slate-950 to-black">
+    
+    <!-- Subtle Background Lighting Aura -->
+    <div class="absolute w-[500px] h-[500px] rounded-full bg-emerald-600/10 blur-[140px] pointer-events-none"></div>
+
+    <!-- SMARTPHONE BEZEL / CHASSIS -->
+    <div class="phone-chassis">
+      
+      <!-- Side Hardware Buttons -->
+      <div class="phone-button-volume-up"></div>
+      <div class="phone-button-volume-down"></div>
+      <div class="phone-button-power"></div>
+
+      <!-- INNER PHONE SCREEN -->
+      <div class="phone-screen">
+        
+        <!-- Top Status Bar & Dynamic Island -->
+        <div class="absolute top-0 left-0 right-0 h-9 px-6 flex justify-between items-center z-[9999] text-xs font-bold text-slate-900 pointer-events-none">
+          <!-- Status Bar Clock -->
+          <span id="sim-status-clock" class="font-mono tracking-tight text-[12px] pl-1 font-bold text-slate-200">10:42</span>
+
+          <!-- Dynamic Island Notch -->
+          <div class="dynamic-island">
+            <div class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
+            <span class="text-[8px] font-mono text-slate-300 uppercase font-bold tracking-widest">RESQNET</span>
+          </div>
+
+          <!-- Network & Battery Icons -->
+          <div class="flex items-center gap-1 text-slate-200">
+            <span class="text-[9px] font-mono font-bold text-emerald-400">GPS ●</span>
+            <span class="material-symbols-outlined text-xs">wifi_off</span>
+            <div class="flex items-center text-[9px] font-mono font-extrabold bg-slate-800 text-white px-1.5 py-0.2 rounded">
+              <span>87%</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- APP VIEWS ROOT CONTAINER -->
+        <div id="sim-views-root" class="relative flex-1 w-full h-full pt-9">
+          
+          <!-- 1. Mobile GIS Map View (Primary) -->
+          <section id="sim-view-map" class="sim-view-panel active"></section>
+
+          <!-- 2. Mobile Safety Hub View -->
+          <section id="sim-view-dashboard" class="sim-view-panel"></section>
+
+          <!-- 3. Mobile AI Vision Camera View -->
+          <section id="sim-view-vision" class="sim-view-panel"></section>
+
+          <!-- 4. Mobile BLE Mesh Communicator View -->
+          <section id="sim-view-mesh" class="sim-view-panel"></section>
+
+        </div>
+
+        <!-- MOBILE BOTTOM NAVIGATION TAB BAR -->
+        <nav id="sim-mobile-nav-bar" class="sim-mobile-nav">
+          <div class="sim-mobile-nav-item active" data-tab="map">
+            <span class="material-symbols-outlined">map</span>
+            <span data-sim-i18n="tab_map">Map</span>
+          </div>
+          <div class="sim-mobile-nav-item" data-tab="dashboard">
+            <span class="material-symbols-outlined">security</span>
+            <span data-sim-i18n="tab_dashboard">Safety</span>
+          </div>
+          <div class="sim-mobile-nav-item" data-tab="distress">
+            <span class="material-symbols-outlined text-red-400">sos</span>
+            <span class="text-red-400 font-bold">Distress</span>
+          </div>
+          <div class="sim-mobile-nav-item" data-tab="mesh">
+            <span class="material-symbols-outlined">podcasts</span>
+            <span data-sim-i18n="tab_mesh">Mesh</span>
+          </div>
+          <div class="sim-mobile-nav-item" data-tab="vision">
+            <span class="material-symbols-outlined">center_focus_strong</span>
+            <span data-sim-i18n="tab_vision">Camera</span>
+          </div>
+        </nav>
+
+        <!-- SOS DISTRESS MODAL CONTAINER INSIDE PHONE -->
+        <div id="sim-modal-container"></div>
+
+        <!-- Bottom Gesture Home Bar -->
+        <div class="phone-home-indicator"></div>
+
+      </div>
+    </div>
+  </main>
+
+  <!-- FOOTER BAR -->
+  <footer class="w-full h-8 border-t border-slate-800 bg-slate-900 px-6 flex items-center justify-between text-[11px] text-slate-400 shrink-0 z-50">
+    <div class="flex items-center gap-2">
+      <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+      <span class="font-mono">RESQNET Simulation Layer • Mode: Frontend Deterministic</span>
+    </div>
+    <div class="font-mono">
+      Target: <strong class="text-white">Arjun Sharma (FIELD-104)</strong>
+    </div>
+  </footer>
+
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,144 @@
+/* ==========================================================================
+   AEGIS-MESH & EMERGE TACTICAL DISPATCH DESIGN SYSTEM
+   ========================================================================== */
+
+/* Custom scrollbar for minimal aesthetic */
+::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #cfc4c5;
+  border-radius: 2px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #7e7576;
+}
+
+/* Map grid overlay */
+.map-grid-overlay {
+  background-image: 
+    linear-gradient(to right, rgba(0, 0, 0, 0.06) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(0, 0, 0, 0.06) 1px, transparent 1px);
+  background-size: 64px 64px;
+  pointer-events: none;
+}
+
+/* View panel toggle */
+.view-panel {
+  display: none;
+}
+.view-panel.active {
+  display: flex;
+}
+
+/* Active Nav State */
+.nav-sidebar-tab.active {
+  background-color: #000000 !important;
+  color: #ffffff !important;
+}
+.nav-top-link.active {
+  border-bottom-color: #000000 !important;
+  color: #000000 !important;
+}
+
+/* CRITICAL MODAL Z-INDEX FIX (OVERLAY LEAFLET MAP PANES) */
+#sos-modal,
+#sys-prompt-modal,
+#ultra-emergency-modal {
+  z-index: 99999 !important;
+  position: fixed !important;
+  inset: 0 !important;
+}
+
+/* Ultra Emergency Pulse Keyframe */
+@keyframes ultra-pulse {
+  0% { box-shadow: 0 0 20px rgba(239, 68, 68, 0.4); border-color: #dc2626; }
+  50% { box-shadow: 0 0 50px rgba(239, 68, 68, 0.85); border-color: #ef4444; }
+  100% { box-shadow: 0 0 20px rgba(239, 68, 68, 0.4); border-color: #dc2626; }
+}
+
+.animate-ultra-pulse {
+  animation: ultra-pulse 2s infinite ease-in-out;
+}
+
+/* Glass & Panel Utilities */
+.glass-panel {
+  background: #ffffff;
+  border: 1px solid #cfc4c5;
+  border-radius: 0.125rem;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.03);
+}
+
+.badge {
+  padding: 2px 8px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border-radius: 0.125rem;
+}
+.badge-red { background: #ffdad6; color: #ba1a1a; border: 1px solid #ba1a1a; }
+.badge-amber { background: #fef3c7; color: #d97706; border: 1px solid #d97706; }
+.badge-emerald { background: #d1fae5; color: #059669; border: 1px solid #059669; }
+.badge-cyan { background: #e0f2fe; color: #0284c7; border: 1px solid #0284c7; }
+.badge-purple { background: #f3e8ff; color: #7e22ce; border: 1px solid #7e22ce; }
+
+.btn {
+  border: 1px solid #000000;
+  padding: 6px 14px;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.btn-primary {
+  background: #000000;
+  color: #ffffff;
+}
+.btn-primary:hover {
+  background: #2a313d;
+}
+.btn-danger {
+  background: #ba1a1a;
+  color: #ffffff;
+  border-color: #ba1a1a;
+}
+.btn-danger:hover {
+  background: #93000a;
+}
+
+/* Leaflet Map Custom Fixes */
+.leaflet-popup-content-wrapper {
+  border-radius: 2px !important;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.15) !important;
+  border: 1px solid #000 !important;
+}
+
+/* User GPS Marker Custom Tooltip & Pin Animations */
+.user-marker-tooltip {
+  background-color: #0f172a !important;
+  color: #38bdf8 !important;
+  border: 1px solid #38bdf8 !important;
+  border-radius: 2px !important;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace !important;
+  font-size: 10px !important;
+  font-weight: 700 !important;
+  padding: 2px 6px !important;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.5) !important;
+}
+.user-marker-tooltip::before {
+  border-top-color: #0f172a !important;
+}
+
+.custom-user-gps-marker {
+  transition: transform 0.1s linear;
+}
