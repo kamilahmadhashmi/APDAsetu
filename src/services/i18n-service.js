@@ -13,8 +13,10 @@ export const SUPPORTED_LANGUAGES = [
 
 export const translations = {
   en: {
-    // App & Header
-    app_title: 'RESQNET',
+    // Brand & Header
+    brand_name: 'AapdaSetu',
+    brand_tag: 'AapdaSetu',
+    app_title: 'AapdaSetu',
     app_sub: 'Tactical Disaster Dispatch & Evacuation Mesh',
     dispatch_center: 'Dispatch Center',
     sys_admin: 'System Administrator',
@@ -175,8 +177,10 @@ export const translations = {
   },
 
   hi: {
-    // App & Header
-    app_title: 'रेसक्यू-नेट',
+    // Brand & Header
+    brand_name: 'आपदासेतु',
+    brand_tag: 'AapdaSetu',
+    app_title: 'आपदासेतु',
     app_sub: 'सामरिक आपदा प्रेषण और निकासी मेश',
     dispatch_center: 'आपदा प्रेषण केंद्र',
     sys_admin: 'सिस्टम प्रशासक',
@@ -337,8 +341,10 @@ export const translations = {
   },
 
   bn: {
-    // App & Header
-    app_title: 'রেসকিউ-নেট',
+    // Brand & Header
+    brand_name: 'আপদাসেতু',
+    brand_tag: 'AapdaSetu',
+    app_title: 'আপদাসেতু',
     app_sub: 'কৌশলগত দুর্যোগ প্রেরণ ও উচ্ছেদ মেশ',
     dispatch_center: 'দুর্যোগ প্রেরণ কেন্দ্র',
     sys_admin: 'সিস্টেম প্রশাসক',
@@ -499,8 +505,10 @@ export const translations = {
   },
 
   or: {
-    // App & Header
-    app_title: 'ରେସକ୍ୟୁ-ନେଟ୍',
+    // Brand & Header
+    brand_name: 'ଆପଦାସେତୁ',
+    brand_tag: 'AapdaSetu',
+    app_title: 'ଆପଦାସେତୁ',
     app_sub: 'ବିପର୍ଯ୍ୟୟ ପରିଚାଳନା ଓ ସ୍ଥାନାନ୍ତର ମେଶ୍',
     dispatch_center: 'ପ୍ରେରଣ କେନ୍ଦ୍ର',
     sys_admin: 'ସିଷ୍ଟମ୍ ଆଡମିନିଷ୍ଟ୍ରେଟର୍',
