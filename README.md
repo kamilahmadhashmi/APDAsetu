@@ -1,171 +1,190 @@
-# ⚡ EMERGE | AEGIS-MESH Emergency Disaster Dispatch & Resilience System
+# ⚡ AapdaSetu (AEGIS-MESH)
+### Resilient Disaster Evacuation, Command Dispatch & Offline Mesh Platform
 
-[![System Status](https://img.shields.io/badge/System-Operational-10B981?style=for-the-badge&logo=shield)](https://github.com/)
-[![Protocol](https://img.shields.io/badge/Protocol-BLE_Mesh_5.3-8B5CF6?style=for-the-badge&logo=bluetooth)](https://github.com/)
-[![Vision](https://img.shields.io/badge/AI_Engine-YOLOv8_FP16-06B6D4?style=for-the-badge&logo=python)](https://github.com/)
-[![Encryption](https://img.shields.io/badge/Security-AES--256--GCM-EF4444?style=for-the-badge&logo=lock)](https://github.com/)
+[![System Status](https://img.shields.io/badge/System-Production_Operational-10B981?style=for-the-badge&logo=shield)](https://github.com/)
+[![Backend](https://img.shields.io/badge/Backend-FastAPI_ASGI-009688?style=for-the-badge&logo=fastapi)](https://fastapi.tiangolo.com/)
+[![Database](https://img.shields.io/badge/Storage-SQLite_WAL_+_SQLAlchemy-003B57?style=for-the-badge&logo=sqlite)](https://www.sqlite.org/)
+[![Cryptography](https://img.shields.io/badge/Security-AES--256--GCM_AEAD-EF4444?style=for-the-badge&logo=lock)](https://developer.mozilla.org/en-US/docs/Web/API/SubtleCrypto)
+[![Routing](https://img.shields.io/badge/Algorithm-Dijkstra_Graph_Solver-F59E0B?style=for-the-badge&logo=google-maps)](https://en.wikipedia.org/wiki/Dijkstra%27s_algorithm)
+[![Offline Readiness](https://img.shields.io/badge/PWA-100%25_Air--Gapped_Ready-3B82F6?style=for-the-badge&logo=pwa)](https://web.dev/progressive-web-apps/)
 
-**AEGIS-MESH** (EMERGE) is an advanced, offline-resilient emergency disaster dispatch and command-and-control platform designed for extreme flood and natural disaster scenarios. It combines real-time GIS spatial mapping, offline peer-to-peer Bluetooth Low Energy (BLE) mesh telemetry, computer vision target detection (YOLOv8), and automated multi-objective logistics route solvers.
-
----
-
-## 📸 Overview & Product Layers
-
-The repository includes both the **Command & Control Desktop Operations Center** and a **Standalone Smartphone Product Simulator**:
-
-| Core Platform Tier | Purpose | Quick Reference |
-| :--- | :--- | :--- |
-| **Command Center (Main App)** | Full desktop dispatch dashboard for system administrators, NDRF rescue teams, and emergency dispatchers. | [index.html](file:///C:/Users/KIIT/.gemini/antigravity/scratch/aegis-disaster-response/index.html) |
-| **Smartphone Simulator** | Standalone mobile demonstration layer showcasing the product running inside a realistic 3D smartphone chassis. | [simulation/index.html](file:///C:/Users/KIIT/.gemini/antigravity/scratch/aegis-disaster-response/simulation/index.html) |
+**AapdaSetu** is an enterprise-grade, offline-resilient disaster dispatch and evacuation platform built to maintain life-saving coordination during catastrophic grid failures, severe urban floods, and telecommunication blackouts.
 
 ---
 
-## 🌟 Key Features
+## 🏛️ System Architecture
 
-### 1. 🗺️ Real-Time GIS Command Center & Flood Surge Engine
-- **Interactive Spatial Map**: Powered by Leaflet.js, rendering live incident locations (P1 Critical, P2 Urgent, P3 Normal), hospital occupancy capacity, and rescue fleet assets (Rescue Boats, Choppers, Amphibious Vehicles, Pumper Trucks, Mobile Generators).
-- **Rising Flood Surge Simulator**: Dynamic water level tracking (+0.4m/hr velocity), synthetic aperture radar (SAR) flood extent overlays, and route hazard monitoring.
-- **Hospital & Fleet Operations**: Real-time bed occupancy tracking (Apex Trauma Center, St. Jude Relief Hub, NDRF Mobile Field Hospital).
+```mermaid
+flowchart TD
+    subgraph Edge ["Field Units & Citizen Mobile (Offline PWA)"]
+        UI["Command & Control UI / Smartphone Sim"]
+        CRYPTO["W3C Web Crypto (AES-256-GCM)"]
+        IDB["IndexedDB Store & Forward Queue"]
+        SW["Service Worker (Air-Gapped Cache)"]
+    end
 
-### 2. 👁️ AI / YOLOv8 Computer Vision Pipeline
-- **Multi-Source Aerial Ingestion**: Processes feeds from Aerial Drones (Sector B4), Sentinel-2 SAR Satellite imagery, and FLIR Night Thermal Infrared camera streams.
-- **Survivor & Asset Detection**: Real-time bounding boxes, segmentation masks, confidence thresholds, and spatial coordinate mapping for stranded victims and submerged vehicles.
+    subgraph Transport ["Gateway & Mesh Ingress"]
+        WS["WebSocket (/ws/dispatch)"]
+        REST["REST API (/api/v1/*)"]
+    end
 
-### 3. 📡 Offline Peer BLE Mesh Network Protocol
-- **Cellular Blackout Mode**: Operates seamlessly when cellular and internet infrastructure collapses during severe flooding.
-- **Peer-to-Peer Telemetry Broadcast**: Relays encrypted emergency distress packets over multi-hop BLE 5.3, Wi-Fi Direct, and LoRa gateways.
-- **AES-256-GCM Encryption**: Secure telemetry payload transmission with hop-by-hop ACK confirmation.
+    subgraph Core ["FastAPI Production ASGI Engine"]
+        SEC["Security Headers & 1MB DoS Ceiling"]
+        PY_CRYPTO["PyCryptodome Decryption & Auth"]
+        DIJKSTRA["Dijkstra Flood-Avoidance Route Solver"]
+        CV["NumPy / Pillow Aerial Vision Engine"]
+        METEO["Open-Meteo Meteorological Ingress"]
+        DB[(Persistent Database: SQLite WAL / PostgreSQL)]
+    end
 
-### 4. 🧮 Logistics Dispatch Routing Solver
-- **Multi-Objective Optimization**: Computes optimal evacuation corridors and resource distribution routes.
-- **Hazard Avoidance**: Dynamically recalculates pathing around flooded roads, submerged bridges, and structural collapse zones.
-
-### 5. 🌐 Multi-Language Support (i18n)
-- Native internationalization engine supporting **English**, **Hindi (हिंदी)**, and **Odia (ଓଡ଼ିଆ)** across all UI views and emergency alerts.
-
-### 6. 📱 Standalone Smartphone Simulator (`/simulation`)
-- Recreates the mobile user experience inside a responsive 3D smartphone bezel complete with dynamic island notch, live status bar clock, mobile navigation, and interactive emergency SOS workflow.
-
----
-
-## 📁 Project Architecture & File Structure
-
-```
-aegis-disaster-response/
-├── index.html                   # Main Command & Control Center entry point
-├── vercel.json                  # Vercel deployment & API rewrite config
-├── requirements.txt             # Python dependencies (FastAPI, Uvicorn, etc.)
-│
-├── src/                         # Frontend application source
-│   ├── app.js                   # Main application initialization & tab router
-│   ├── i18n.js                  # Multi-language translations (EN, HI, OR)
-│   ├── modals.js                # System prompts & Emergency SOS modal handlers
-│   ├── components/
-│   │   ├── gis-map.js           # Interactive GIS Command map & flood surge engine
-│   │   ├── ai-vision.js         # YOLOv8 Computer Vision feed processor
-│   │   ├── mesh-network.js      # Offline BLE Mesh relay & ping visualizer
-│   │   ├── routing-solver.js    # Logistics routing solver & comparison engine
-│   │   └── architecture.js      # System architecture & data flow pipeline
-│   ├── services/
-│   │   ├── flood-prediction.js  # Hydrological flood surge calculation engine
-│   │   └── weather-ingress.js   # Live weather data ingress service
-│   └── styles/
-│       └── main.css             # Main styling & Tailwind custom design system
-│
-├── backend/                     # Python FastAPI Backend
-│   ├── main.py                  # FastAPI application entry point & CORS configuration
-│   ├── test_backend.py          # Backend test suite
-│   └── app/
-│       ├── api/
-│       │   └── endpoints.py     # API endpoints for telemetry, vision, & solver
-│       ├── models/
-│       │   └── schemas.py       # Pydantic data schemas
-│       └── services/
-│           ├── mesh_engine.py   # BLE Mesh packet encryption & relay service
-│           ├── routing_engine.py# Route optimization solver
-│           ├── vision_engine.py # YOLOv8 inference wrapper
-│           └── weather_engine.py# Hydrological forecasting core
-│
-├── api/
-│   └── index.py                 # Vercel serverless entry point handler
-│
-└── simulation/                  # Standalone Smartphone Simulator Website
-    ├── index.html               # Smartphone presentation shell & 3D device frame
-    ├── css/
-    │   └── smartphone.css       # Smartphone chassis styling & custom keyframe animations
-    └── js/
-        ├── app.js               # Mobile simulator application coordinator
-        ├── i18n-sim.js          # Simulator multi-language translation engine
-        ├── modals/
-        │   └── sos.js           # Smartphone Emergency SOS distress modal
-        └── views/
-            ├── splash.js        # Boot splash & role onboarding screen
-            ├── dashboard.js     # Mobile disaster dashboard view
-            ├── map.js           # Mobile Leaflet GIS map view
-            ├── vision.js        # Mobile AI field camera scanner
-            ├── mesh.js          # Mobile BLE mesh communicator
-            └── routing.js       # Evacuation route & shelter finder
+    UI --> CRYPTO
+    UI --> IDB
+    UI --> SW
+    UI <--> WS
+    UI <--> REST
+    REST --> SEC
+    WS --> SEC
+    SEC --> PY_CRYPTO
+    SEC --> DIJKSTRA
+    SEC --> CV
+    SEC --> METEO
+    SEC --> DB
 ```
 
 ---
 
-## ⚡ Getting Started
+## 🌟 Production Capabilities
+
+### 1. 🗺️ Dynamic GIS & Dijkstra Evacuation Routing
+- **Real-Time Road Network (`/api/v1/routing/network`)**: Graph model representing bridges, viaducts, intersections, shelters, and trauma centers.
+- **Dijkstra Flood Avoidance (`/api/v1/routing/calculate`)**: Dynamically penalizes or assigns infinite impedance to submerged corridors (`flood_depth >= threshold`), calculating safe detours for ambulances and rescue boats with safety clearance margins.
+- **Live Corridor Rendering**: Displays operational corridors in emerald green and impassable flood hazards in dashed red on an interactive Leaflet map.
+
+### 2. 🔐 Authentic AES-256-GCM Cryptographic Pipeline
+- **Browser-Side W3C Web Crypto**: Generates cryptographically secure 12-byte IVs (`crypto.getRandomValues`) and authenticates telemetry with AES-GCM (128-bit tag).
+- **Backend AEAD Decryption**: Decrypts and verifies signatures via Python's `cryptography` module before persisting to the database, preventing forged or tampered distress beacons.
+
+### 3. 💾 High-Concurrency Persistent Storage
+- **SQLAlchemy ORM + SQLite WAL Mode**: Configured with `PRAGMA journal_mode=WAL`, `PRAGMA synchronous=NORMAL`, and busy timeouts to support high-throughput concurrent distress submissions without table locking.
+- **Collision-Free UUID Keys**: Generates unique, non-overlapping incident identifiers under burst traffic.
+
+### 4. 📴 100% Offline Air-Gapped Disaster Readiness
+- **Local Vendor Bundles (`/src/vendor/`)**: Pre-packaged, minified bundles of Leaflet GIS, Lucide icons, Chart.js, and Tailwind with CDN fallback. Operates with zero internet connectivity when deployed on a field laptop or Raspberry Pi.
+- **Store-and-Forward (IndexedDB)**: Caches outgoing SOS distress packets during radio silence, automatically flushing them to the dispatch gateway upon network reconnection.
+- **Cache-First Service Worker (`sw.js`)**: Instantly loads the application shell during severe connectivity disruptions.
+
+### 5. 🛰️ Live Hydrological & Meteorological Ingress
+- **Open-Meteo API**: Automatically polls real-time precipitation, wind velocity, and dam discharge telemetry, calculating catchment runoff and flood breach probabilities.
+
+### 6. 👁️ Aerial Vision & Spectral Water Analysis
+- **Pillow & NumPy Pipeline**: Decodes drone and aerial reconnaissance frames, computes water-band spectral ratios to calculate surface flood coverage percentages, and isolates stranded survivors with scaled bounding coordinates.
+
+---
+
+## ⚡ Quick Start
 
 ### Prerequisites
-- Modern Web Browser (Chrome, Firefox, Edge, Safari)
-- Python 3.9+ (optional, for backend API server)
+- Python 3.10+ (Recommended: Python 3.13)
+- Git
 
-### 1. Launching the Main Operations Center
-Simply open [index.html](file:///C:/Users/KIIT/.gemini/antigravity/scratch/aegis-disaster-response/index.html) directly in your browser, or serve it using Python:
+### 1. Local Setup (Virtual Environment)
+```powershell
+# Clone the repository
+git clone https://github.com/kamilahmadhashmi/APDAsetu.git
+cd APDAsetu
 
-```bash
-# Serve main project from root
-python -m http.server 8080
-```
-Then navigate to `http://localhost:8080`.
+# Create and activate virtual environment
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1   # Windows PowerShell
+# source .venv/bin/activate    # Linux / macOS
 
-### 2. Launching the Smartphone Simulator
-To run the standalone smartphone presentation demo:
-
-```bash
-# Serve simulator directory
-python -m http.server 8085 --directory simulation
-```
-Then navigate to `http://localhost:8085`.
-
-### 3. Running the FastAPI Backend Server
-To run the Python backend API services locally:
-
-```bash
-# Install backend dependencies
+# Install dependencies
 pip install -r requirements.txt
-
-# Start FastAPI server
-uvicorn backend.main:app --reload --port 8000
 ```
-The API documentation will be available at `http://localhost:8000/docs`.
+
+### 2. Launching the Production Server
+
+#### Option A: FastAPI ASGI Server (Recommended)
+```powershell
+.\.venv\Scripts\python -m uvicorn backend.main:app --reload --host 0.0.0.0 --port 8000
+```
+- **Command & Control Dashboard**: [http://localhost:8000](http://localhost:8000)
+- **Smartphone Simulator**: [http://localhost:8000/simulation](http://localhost:8000/simulation)
+- **Interactive OpenAPI / Swagger Docs**: [http://localhost:8000/docs](http://localhost:8000/docs)
+- **Live WebSocket Hub**: `ws://localhost:8000/ws/dispatch`
+
+#### Option B: Standalone Zero-Dependency Python Server
+```powershell
+.\.venv\Scripts\python server.py 8000
+```
+
+#### Option C: Hardened Node.js Static Server
+```powershell
+node serve.js 3000
+```
 
 ---
 
-## 📡 API Endpoint Reference
+## 🐳 Docker Deployment
+
+Deploy with a single command on any cloud host, field laptop, or edge device:
+
+```bash
+docker compose up -d --build
+```
+
+The container includes:
+- Non-root runtime user (`appuser:1000`)
+- Built-in container health check (`/api/v1/system/health`)
+- Named persistent volume mount (`aapda_data`) for the database
+
+---
+
+## 📡 API Reference Overview
 
 | Method | Endpoint | Description |
-| :--- | :--- | :--- |
-| `GET` | `/api/health` | Gateway health check & latency metrics |
-| `GET` | `/api/incidents` | Fetch active emergency incidents & distress packets |
-| `POST` | `/api/sos` | Transmit encrypted BLE Mesh SOS distress telemetry packet |
-| `GET` | `/api/fleet` | Get live positions & status of rescue fleet vehicles |
-| `GET` | `/api/hospitals` | Retrieve emergency shelter & trauma hospital capacities |
-| `POST` | `/api/solve-routes` | Compute multi-objective evacuation routes avoiding hazards |
+|---|---|---|
+| `GET` | `/` | Serves the full Command & Control application shell |
+| `GET` | `/simulation` | Serves the interactive Smartphone Simulator |
+| `GET` | `/api/v1/system/health` | Operational health and latency telemetry |
+| `GET` | `/api/v1/incidents` | Query active persistent distress incidents |
+| `POST` | `/api/v1/incidents/ingest` | Ingest and verify AES-256-GCM distress packets |
+| `GET` | `/api/v1/hospitals` | Hospital bed occupancy and trauma capacity |
+| `GET` | `/api/v1/fleet` | Rescue boat, helicopter, and pumper truck telemetry |
+| `GET` | `/api/v1/roads` | Real-time road hazard and flood depth monitoring |
+| `GET` | `/api/v1/routing/network` | Full topological road network with clearance thresholds |
+| `POST` | `/api/v1/routing/calculate` | Dijkstra path solver with live hazard avoidance |
+| `POST` | `/api/v1/routing/solver` | Multi-objective fleet and hospital allocation solver |
+| `POST` | `/api/v1/vision/analyze` | Aerial drone image analysis & victim localization |
+| `GET` | `/api/v1/weather/live` | Live Open-Meteo precipitation and water level stream |
+| `WS` | `/ws/dispatch` | Real-time bidirectional WebSocket event stream |
 
 ---
 
-## 🛡️ Security & Resilience Specifications
-- **Data Encryption**: AES-256-GCM symmetric encryption for all mesh packets.
-- **Failover Architecture**: Automatic seamless failover from Cellular/FastAPI gateway $\rightarrow$ BLE Mesh Peer Relay upon network degradation.
-- **Zero Modification Guarantee**: The `/simulation` directory is fully isolated, ensuring zero side effects on the core command platform.
+## 🛡️ Security Audit & Hardening Remediations
+
+| Vulnerability ID | Classification | Remediation Applied |
+|---|---|---|
+| **SEC-01** | Process Crash via Malformed URI | Wrapped `decodeURI` in `serve.js` inside `try...catch` returning HTTP 400 Bad Request. |
+| **SEC-02** | Denial of Service / Memory Exhaustion | Enforced 1MB payload ceiling across `server.py`, `backend/main.py`, and `api/index.py`. |
+| **SEC-03** | Stored DOM Cross-Site Scripting (XSS) | Implemented `escapeHtml()` sanitization across all Leaflet popups and sidebar innerHTML interpolations. |
+| **SEC-04** | Cryptographic Mockup Bypass | Implemented authentic W3C Web Crypto + PyCryptodome AES-256-GCM AEAD encryption pipeline. |
+| **SEC-05** | Missing Defensive HTTP Headers | Enforced `X-Content-Type-Options: nosniff` and `X-Frame-Options: SAMEORIGIN` / `DENY`. |
+| **SEC-06** | Directory Traversal | Normalized path resolution and enforced strict directory boundary checks. |
 
 ---
 
-## 📄 License & Acknowledgments
-Created for **EMERGE / AEGIS Disaster Response Framework**. Built with Leaflet, Tailwind CSS, Lucide Icons, Material Symbols, and FastAPI.
+## 🧪 Running the Verification Test Suites
+
+```powershell
+# Run backend unit, cryptographic, and routing integration tests
+.\.venv\Scripts\pytest backend/test_backend.py
+
+# Run server hardening and crash resilience verification tests
+.\.venv\Scripts\python backend/test_servers.py
+```
+
+---
+
+## 📄 License
+This project is open-sourced under the MIT License.

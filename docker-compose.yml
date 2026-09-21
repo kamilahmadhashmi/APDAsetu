@@ -1,0 +1,27 @@
+# ==============================================================================
+# AAPDASETU (AEGIS-MESH) - DOCKER COMPOSE FIELD ORCHESTRATION
+# ==============================================================================
+services:
+  aapdasetu:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: aapdasetu-gateway
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      - AEGIS_MESH_SECRET=AEGIS-RESQNET-DISASTER-EMERGENCY-2026-KEY
+      - DATABASE_URL=sqlite:////app/backend/aegis.db
+    volumes:
+      - aapda_data:/app/backend
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/v1/system/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+volumes:
+  aapda_data:
+    driver: local

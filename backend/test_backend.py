@@ -157,6 +157,51 @@ def test_security_hardening():
     assert res_404.status_code == 404
     print("  [PASS] Security headers and HTTP 404 response validated.")
 
+def test_routing_network_and_calculation():
+    print("[8/9] Testing Live Dijkstra Routing Network & Calculation API...")
+    # Test network discovery
+    res_net = client.get("/api/v1/routing/network")
+    assert res_net.status_code == 200
+    net_data = res_net.json()
+    assert "network" in net_data
+    assert len(net_data["network"]["nodes"]) >= 5
+    assert len(net_data["network"]["edges"]) >= 5
+    print(f"  [PASS] Network graph contains {len(net_data['network']['nodes'])} nodes and {len(net_data['network']['edges'])} edges.")
+
+    # Test route calculation
+    res_calc = client.post("/api/v1/routing/calculate", json={
+        "origin_node": "NODE_SHELTER_SOUTH",
+        "destination_node": "NODE_HOSP_CENTRAL",
+        "vehicle_type": "AMBULANCE",
+        "flood_threshold": 0.8
+    })
+    assert res_calc.status_code == 200
+    calc_data = res_calc.json()
+    assert calc_data["success"] is True
+    assert len(calc_data["path_coordinates"]) >= 2
+    assert calc_data["total_distance_km"] > 0
+    print(f"  [PASS] Dijkstra path computed: {calc_data['total_distance_km']} km, ETA {calc_data['estimated_transit_minutes']} min, avoided {calc_data['flooded_segments_avoided']} flooded links.")
+
+def test_offline_vendor_assets():
+    print("[9/9] Testing 100% Offline Air-Gapped Vendor Bundles & PWA Shell...")
+    # Test HTML shell
+    res_root = client.get("/")
+    assert res_root.status_code == 200
+    assert "AapdaSetu" in res_root.text
+
+    # Test PWA Service Worker
+    res_sw = client.get("/sw.js")
+    assert res_sw.status_code == 200
+    assert "Service-Worker-Allowed" in res_sw.headers
+
+    # Test vendor assets
+    for asset in ["/src/vendor/leaflet.js", "/src/vendor/leaflet.css", "/src/vendor/lucide.min.js", "/src/vendor/chart.umd.min.js", "/src/vendor/tailwind.js"]:
+        res_asset = client.get(asset)
+        assert res_asset.status_code == 200, f"Failed to load {asset}"
+        assert len(res_asset.content) > 1000, f"Asset {asset} too small"
+
+    print("  [PASS] All air-gapped vendor scripts, stylesheets, and PWA shell served with 200 OK.")
+
 def run_all():
     print("\n==========================================================================")
     print("AAPDASETU PRODUCTION SYSTEM VERIFICATION TEST SUITE")
@@ -168,7 +213,9 @@ def run_all():
     test_live_weather_ingress()
     test_fastapi_rest_endpoints()
     test_security_hardening()
-    print("\n🎉 ALL 7 PRODUCTION SYSTEM TESTS PASSED PERFECTLY!\n")
+    test_routing_network_and_calculation()
+    test_offline_vendor_assets()
+    print("\nALL 9 PRODUCTION SYSTEM TESTS PASSED PERFECTLY!\n")
 
 if __name__ == "__main__":
     run_all()

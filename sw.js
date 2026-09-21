@@ -25,7 +25,12 @@ const OFFLINE_URLS = [
   '/src/components/ai-vision.js',
   '/src/components/mesh-network.js',
   '/src/components/routing-solver.js',
-  '/src/components/architecture.js'
+  '/src/components/architecture.js',
+  '/src/vendor/leaflet.js',
+  '/src/vendor/leaflet.css',
+  '/src/vendor/lucide.min.js',
+  '/src/vendor/chart.umd.min.js',
+  '/src/vendor/tailwind.js'
 ];
 
 self.addEventListener('install', (event) => {

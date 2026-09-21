@@ -10,6 +10,7 @@ import os
 import json
 import base64
 import hashlib
+import uuid
 from typing import Dict, Any, List, Optional
 from datetime import datetime, timezone
 
@@ -135,8 +136,7 @@ class MeshEngine:
                 # If decryption fails (tampered payload or bad key), raise security error
                 raise ValueError(f"AES-256-GCM Decryption/Authentication failed: {str(e)}")
 
-        count = db.query(Incident).count()
-        inc_id = f"INC-{count + 9045}"
+        inc_id = raw_payload.get("id") or f"INC-{uuid.uuid4().hex[:6].upper()}"
         
         tags = raw_payload.get("tags", ["Emergency SOS", "Immediate Evac"])
         if isinstance(tags, str):

@@ -91,14 +91,46 @@ async def websocket_dispatch_endpoint(websocket: WebSocket):
     except Exception:
         ws_manager.disconnect(websocket)
 
-@app.get("/")
-def root():
-    return {
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
+
+PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+
+# PWA and root web handlers
+@app.get("/", response_class=FileResponse)
+def serve_index():
+    index_path = os.path.join(PROJECT_ROOT, "index.html")
+    if os.path.exists(index_path):
+        return FileResponse(index_path, media_type="text/html")
+    return JSONResponse({
         "service": "AapdaSetu Production Gateway",
         "docs_url": "/docs",
         "api_prefix": "/api/v1",
         "websocket_url": "/ws/dispatch"
-    }
+    })
+
+@app.get("/sw.js")
+def serve_service_worker():
+    sw_path = os.path.join(PROJECT_ROOT, "sw.js")
+    return FileResponse(
+        sw_path,
+        media_type="application/javascript",
+        headers={"Service-Worker-Allowed": "/", "Cache-Control": "no-cache"}
+    )
+
+@app.get("/manifest.json")
+def serve_manifest():
+    manifest_path = os.path.join(PROJECT_ROOT, "manifest.json")
+    return FileResponse(manifest_path, media_type="application/json")
+
+# Static assets mounts for offline disaster operation
+src_dir = os.path.join(PROJECT_ROOT, "src")
+if os.path.exists(src_dir):
+    app.mount("/src", StaticFiles(directory=src_dir), name="src")
+
+sim_dir = os.path.join(PROJECT_ROOT, "simulation")
+if os.path.exists(sim_dir):
+    app.mount("/simulation", StaticFiles(directory=sim_dir, html=True), name="simulation")
 
 def run_server(host="0.0.0.0", port=8000):
     print(f"🚀 [AAPDASETU] Starting Production FastAPI Server on http://{host}:{port}")

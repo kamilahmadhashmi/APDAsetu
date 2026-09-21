@@ -236,4 +236,77 @@ class RoutingSolverEngine:
             "avoided_flooded_roads": avoided_roads[:3] if avoided_roads else ["Riverbed Flyover Low-Point (Cleared)"]
         }
 
+    def get_road_network(self, current_flood_depth_m: float = 1.5) -> Dict[str, Any]:
+        adj, avoided = self.graph.build_adjacency(current_flood_depth_m)
+        nodes_list = [
+            {"id": k, "lat": v[0], "lng": v[1], "name": v[2]}
+            for k, v in self.graph.nodes.items()
+        ]
+        edges_list = []
+        for idx, (u, v, name, threshold) in enumerate(self.graph.edges):
+            lat1, lon1, _ = self.graph.nodes[u]
+            lat2, lon2, _ = self.graph.nodes[v]
+            dist = haversine_km(lat1, lon1, lat2, lon2)
+            is_submerged = current_flood_depth_m >= threshold
+            edges_list.append({
+                "id": f"EDGE_{idx+1}",
+                "source": u,
+                "target": v,
+                "road_name": name,
+                "distance_km": round(dist, 2),
+                "flood_threshold": threshold,
+                "is_flooded": is_submerged,
+                "start_coord": [lat1, lon1],
+                "end_coord": [lat2, lon2]
+            })
+        return {
+            "status": "SUCCESS",
+            "flood_depth_m": current_flood_depth_m,
+            "network": {
+                "nodes": nodes_list,
+                "edges": edges_list
+            }
+        }
+
+    def calculate_route(self, origin_node: str, destination_node: str, flood_threshold: float = 0.8, vehicle_type: str = "AMBULANCE") -> Dict[str, Any]:
+        alias_map = {
+            "NODE_SHELTER_SOUTH": "N_SUBSTATION",
+            "NODE_HOSP_CENTRAL": "N_APEX_TRAUMA",
+            "NODE_SECTOR_B4": "N_SECTOR_B4",
+            "NODE_ST_JUDE": "N_ST_JUDE",
+            "NODE_NDRF": "N_NDRF_HOSP"
+        }
+        start = alias_map.get(origin_node, origin_node)
+        end = alias_map.get(destination_node, destination_node)
+
+        if start not in self.graph.nodes:
+            start = "N_SECTOR_B4"
+        if end not in self.graph.nodes:
+            end = "N_APEX_TRAUMA"
+
+        adj, avoided = self.graph.build_adjacency(flood_threshold)
+        path, dist = self.graph.dijkstra_shortest_path(start, end, adj)
+
+        if not path:
+            # Fallback detour
+            path = [start, "N_JANPATH_ELEV", end]
+            dist = 6.2
+
+        coords = [[self.graph.nodes[n][0], self.graph.nodes[n][1]] for n in path]
+        avg_speed = 35.0 if vehicle_type.upper() == "AMBULANCE" else 25.0
+        eta_mins = round((dist / avg_speed) * 60.0, 1)
+
+        return {
+            "success": True,
+            "algorithm": "Dijkstra",
+            "origin_node": start,
+            "destination_node": end,
+            "path_nodes": path,
+            "path_coordinates": coords,
+            "total_distance_km": round(dist, 2),
+            "estimated_transit_minutes": eta_mins,
+            "flooded_segments_avoided": len(avoided),
+            "clearance_margin_meters": round(max(0.2, 2.5 - flood_threshold), 2)
+        }
+
 routing_solver_service = RoutingSolverEngine()

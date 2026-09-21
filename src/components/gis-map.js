@@ -785,10 +785,47 @@ function updateFloodPolygon() {
   `);
 }
 
-function renderRoadPolylines() {
+async function renderRoadPolylines() {
   if (!map) return;
   if (safeRoadsLayer && map) map.removeLayer(safeRoadsLayer);
   if (dangerousRoadsLayer && map) map.removeLayer(dangerousRoadsLayer);
+
+  try {
+    const res = await fetch('/api/v1/routing/network');
+    if (res.ok) {
+      const data = await res.json();
+      const safeSegments = [];
+      const dangerSegments = [];
+
+      if (data.network && Array.isArray(data.network.edges)) {
+        data.network.edges.forEach(edge => {
+          const coords = [edge.start_coord, edge.end_coord];
+          if (edge.is_flooded) {
+            dangerSegments.push(coords);
+          } else {
+            safeSegments.push(coords);
+          }
+        });
+
+        safeRoadsLayer = L.polyline(safeSegments, {
+          color: '#10b981',
+          weight: 5,
+          opacity: 0.9
+        }).addTo(map);
+
+        dangerousRoadsLayer = L.polyline(dangerSegments, {
+          color: '#ef4444',
+          weight: 6,
+          opacity: 0.95,
+          dashArray: '8, 8'
+        }).addTo(map);
+
+        return;
+      }
+    }
+  } catch (err) {
+    console.warn('Live routing network API unavailable, falling back to local vectors:', err);
+  }
 
   const safeCoords = [
     [20.2790, 85.8390],
@@ -815,6 +852,61 @@ function renderRoadPolylines() {
     opacity: 0.95,
     dashArray: '8, 8'
   }).addTo(map);
+}
+
+async function calculateAndRenderEvacRoute() {
+  const btn = document.getElementById('btn-insp-route-shelter');
+  if (btn) btn.innerHTML = '<span class="material-symbols-outlined text-xs animate-spin">sync</span> Routing...';
+
+  try {
+    const payload = {
+      origin_node: "NODE_SHELTER_SOUTH",
+      destination_node: "NODE_HOSP_CENTRAL",
+      vehicle_type: "AMBULANCE",
+      flood_threshold: 0.8
+    };
+
+    const res = await fetch('/api/v1/routing/calculate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+
+    const routeData = await res.json();
+    if (!routeData.success || !routeData.path_coordinates || routeData.path_coordinates.length === 0) {
+      alert('Unable to compute safe corridor. Flooding is impassable.');
+      return;
+    }
+
+    if (userEvacRouteLayer && map) {
+      map.removeLayer(userEvacRouteLayer);
+    }
+
+    // Draw glowing cyan polyline for Dijkstra calculated path
+    userEvacRouteLayer = L.polyline(routeData.path_coordinates, {
+      color: '#06b6d4',
+      weight: 8,
+      opacity: 0.95,
+      dashArray: '12, 6'
+    }).addTo(map);
+
+    // Fit map bounds to view whole route
+    map.fitBounds(userEvacRouteLayer.getBounds(), { padding: [60, 60] });
+
+    // Show Evacuation Summary Modal
+    showUltraEmergencyModal({
+      title: 'DIJKSTRA EVACUATION CORRIDOR COMPUTED',
+      message: `Optimal detour computed: ${routeData.flooded_segments_avoided} submerged bottleneck(s) bypassed!`,
+      details: `ALGORITHM: Dijkstra Shortest Path\nTOTAL DISTANCE: ${routeData.total_distance_km} km\nESTIMATED TRANSIT: ${routeData.estimated_transit_minutes} min\nSUBMERGED HAZARDS AVOIDED: ${routeData.flooded_segments_avoided}\nCLEARANCE MARGIN: ${routeData.clearance_margin_meters}m\nWAYPOINTS: ${routeData.path_nodes.join(' → ')}`,
+      location: `${routeData.path_coordinates[0][0].toFixed(4)}° N → ${routeData.path_coordinates[routeData.path_coordinates.length - 1][0].toFixed(4)}° N`,
+      priority: 'SAFE TRANSIT ACTIVE'
+    });
+  } catch (err) {
+    console.error('Routing calculation failed:', err);
+    alert('Failed to connect to routing engine.');
+  } finally {
+    if (btn) btn.innerHTML = '<span class="material-symbols-outlined text-xs">route</span> Evac Route';
+  }
 }
 
 function renderSidebarTab(tabName) {
@@ -1052,7 +1144,7 @@ function attachGisEvents() {
   document.getElementById('btn-close-inspector')?.addEventListener('click', () => {
     document.getElementById('user-location-inspector')?.classList.add('hidden');
   });
-  document.getElementById('btn-insp-route-shelter')?.addEventListener('click', drawEvacuationRouteToShelter);
+  document.getElementById('btn-insp-route-shelter')?.addEventListener('click', calculateAndRenderEvacRoute);
 }
 
 function setActiveTab(btn) {

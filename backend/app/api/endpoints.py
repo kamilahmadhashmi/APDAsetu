@@ -123,6 +123,25 @@ def analyze_vision_feed(payload: VisionDetectRequest):
 # --------------------------------------------------------------------------
 # 6. Logistics & Dijkstra Flood-Avoidance Route Solver
 # --------------------------------------------------------------------------
+@router.get("/routing/network")
+def get_routing_network(flood_depth_m: float = 1.5):
+    """Returns the topological road network with live edge clearance and flood status."""
+    return routing_solver_service.get_road_network(current_flood_depth_m=flood_depth_m)
+
+@router.post("/routing/calculate")
+def calculate_evacuation_corridor(payload: Dict[str, Any]):
+    """Calculates optimal Dijkstra path avoiding submerged road segments."""
+    origin = payload.get("origin_node", "N_SECTOR_B4")
+    dest = payload.get("destination_node", "N_APEX_TRAUMA")
+    threshold = float(payload.get("flood_threshold", 0.8))
+    vtype = str(payload.get("vehicle_type", "AMBULANCE"))
+    return routing_solver_service.calculate_route(
+        origin_node=origin,
+        destination_node=dest,
+        flood_threshold=threshold,
+        vehicle_type=vtype
+    )
+
 @router.post("/routing/solver")
 def solve_evacuation_routing(payload: RoutingSolverRequest):
     return routing_solver_service.solve_multi_objective(
@@ -197,6 +216,17 @@ def handle_api_request(path: str, method: str = "GET", payload: Optional[Dict[st
             bed_prio = float(payload.get("bed_priority_weight", 0.75))
             storm = float(payload.get("storm_risk_factor", 3.0))
             return routing_solver_service.solve_multi_objective(origin_lat, origin_lng, depth, bed_prio, storm)
+
+        elif path == "/api/v1/routing/network" and method == "GET":
+            depth = float(payload.get("flood_depth_m", 1.5))
+            return routing_solver_service.get_road_network(current_flood_depth_m=depth)
+
+        elif path == "/api/v1/routing/calculate" and method == "POST":
+            origin = payload.get("origin_node", "N_SECTOR_B4")
+            dest = payload.get("destination_node", "N_APEX_TRAUMA")
+            threshold = float(payload.get("flood_threshold", 0.8))
+            vtype = str(payload.get("vehicle_type", "AMBULANCE"))
+            return routing_solver_service.calculate_route(origin, dest, threshold, vtype)
 
         elif path == "/api/v1/mesh/topology" and method == "GET":
             return mesh_engine_service.get_mesh_topology(db)
