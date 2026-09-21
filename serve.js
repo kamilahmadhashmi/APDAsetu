@@ -23,7 +23,14 @@ const MIME_TYPES = {
 };
 
 const server = http.createServer((req, res) => {
-  let reqUrl = decodeURI(req.url.split('?')[0]);
+  let reqUrl;
+  try {
+    reqUrl = decodeURI((req.url || '').split('?')[0]);
+  } catch (err) {
+    res.writeHead(400, { 'Content-Type': 'text/plain' });
+    res.end('400 Bad Request: Malformed URI');
+    return;
+  }
   
   if (reqUrl === '/' || reqUrl === '') {
     reqUrl = '/index.html';
@@ -31,10 +38,11 @@ const server = http.createServer((req, res) => {
     reqUrl = '/simulation/index.html';
   }
 
-  let filePath = path.join(ROOT, reqUrl);
+  const safeRoot = path.resolve(ROOT) + path.sep;
+  const filePath = path.resolve(path.join(ROOT, reqUrl));
 
   // Security check: prevent directory traversal
-  if (!filePath.startsWith(ROOT)) {
+  if (!filePath.startsWith(safeRoot) && filePath !== path.resolve(ROOT)) {
     res.writeHead(403, { 'Content-Type': 'text/plain' });
     res.end('403 Forbidden');
     return;
@@ -75,13 +83,21 @@ function serveFile(absPath, res) {
       return;
     }
 
-    res.writeHead(200, {
+    const headers = {
       'Content-Type': contentType,
-      'Cache-Control': 'no-cache, no-store, must-revalidate',
-      'Pragma': 'no-cache',
-      'Expires': '0',
-      'Access-Control-Allow-Origin': '*'
-    });
+      'Access-Control-Allow-Origin': '*',
+      'X-Content-Type-Options': 'nosniff',
+      'X-Frame-Options': 'SAMEORIGIN',
+      'Referrer-Policy': 'strict-origin-when-cross-origin'
+    };
+
+    if (ext === '.html') {
+      headers['Cache-Control'] = 'no-cache, no-store, must-revalidate';
+    } else {
+      headers['Cache-Control'] = 'public, max-age=86400';
+    }
+
+    res.writeHead(200, headers);
     res.end(data);
   });
 }

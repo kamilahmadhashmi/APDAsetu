@@ -1,0 +1,22 @@
+# Python & Environments
+.venv/
+venv/
+env/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+
+# OS & Logs
+.DS_Store
+Thumbs.db
+*.log
+npm-debug.log*
+
+# Node modules (if any)
+node_modules/

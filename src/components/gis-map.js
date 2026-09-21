@@ -8,6 +8,17 @@ import { showSystemPrompt, showUltraEmergencyModal } from '../modals.js';
 import { floodPredictionService } from '../services/flood-prediction.js';
 import { weatherIngressService } from '../services/weather-ingress.js';
 import { locationService, DEMO_USER_LOCATION, mockShelters } from '../services/location-service.js';
+import { websocketClient } from '../services/websocket-service.js';
+
+export function escapeHtml(str) {
+  if (str === null || str === undefined) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
 
 export const mockHospitals = [
   { id: 'HOSP-01', name: 'Apex General Trauma Center', occupied: 102, total: 120, pct: 85, lat: 20.3200, lng: 85.8100, status: 'HIGH_LOAD', color: '#f59e0b' },
@@ -334,6 +345,55 @@ function initLeafletMap() {
   plotFleetMarkers(mockUtilityFleet);
   plotShelterMarkers(mockShelters);
   initUserLocationLayer(initialPos);
+
+  // Connect real-time WebSocket & fetch live persistent incidents
+  websocketClient.connect();
+  fetch('/api/v1/incidents')
+    .then(r => r.json())
+    .then(data => {
+      if (data && data.incidents) {
+        data.incidents.forEach(inc => {
+          if (!mockIncidents.find(i => i.id === inc.id)) {
+            mockIncidents.push({
+              id: inc.id,
+              title: inc.title,
+              desc: inc.desc,
+              lat: inc.lat,
+              lng: inc.lng,
+              prio: inc.priority,
+              prioType: inc.prio_type || 'red',
+              meshHop: inc.mesh_hop || 'BLE Hop #1',
+              time: inc.time || 'Just now'
+            });
+          }
+        });
+        plotIncidentMarkers(mockIncidents);
+        renderSidebarTab('incidents');
+      }
+    })
+    .catch(() => {});
+
+  // Real-time dispatch listener
+  window.addEventListener('aegis-dispatch-event', (e) => {
+    if (e.detail && e.detail.type === 'NEW_DISTRESS_INCIDENT') {
+      const inc = e.detail.incident;
+      if (inc && !mockIncidents.find(i => i.id === inc.id)) {
+        mockIncidents.unshift({
+          id: inc.id,
+          title: inc.title,
+          desc: inc.desc,
+          lat: inc.lat,
+          lng: inc.lng,
+          prio: inc.priority,
+          prioType: inc.prio_type || 'red',
+          meshHop: inc.mesh_hop || 'BLE Hop #1',
+          time: inc.time || 'Just now'
+        });
+        plotIncidentMarkers(mockIncidents);
+        renderSidebarTab('incidents');
+      }
+    }
+  });
 
   setTimeout(() => {
     if (map) map.invalidateSize();
@@ -763,14 +823,14 @@ function renderSidebarTab(tabName) {
 
   if (tabName === 'incidents') {
     container.innerHTML = mockIncidents.map(inc => `
-      <div class="p-4 border-b border-outline-variant hover:bg-surface transition-colors cursor-pointer group inc-card-item" onclick="window.panToCoordinates(${inc.lat}, ${inc.lng})">
+      <div class="p-4 border-b border-outline-variant hover:bg-surface transition-colors cursor-pointer group inc-card-item" onclick="window.panToCoordinates(${parseFloat(inc.lat) || 20.2961}, ${parseFloat(inc.lng) || 85.8245})">
         <div class="flex justify-between items-start mb-2">
-          <span class="bg-primary text-on-primary text-xs font-bold px-2 py-0.5">${inc.prio}</span>
-          <span class="text-xs text-on-surface-variant">${inc.time}</span>
+          <span class="bg-primary text-on-primary text-xs font-bold px-2 py-0.5">${escapeHtml(inc.prio || 'Priority 1')}</span>
+          <span class="text-xs text-on-surface-variant">${escapeHtml(inc.time || 'Just now')}</span>
         </div>
-        <h3 class="text-base font-medium text-primary mb-1 group-hover:underline">${inc.title}</h3>
-        <p class="text-sm text-on-surface-variant mb-2">${inc.desc}</p>
-        <div class="text-[10px] font-mono text-cyan-600">📡 ${inc.meshHop}</div>
+        <h3 class="text-base font-medium text-primary mb-1 group-hover:underline">${escapeHtml(inc.title || 'Distress Incident')}</h3>
+        <p class="text-sm text-on-surface-variant mb-2">${escapeHtml(inc.desc || '')}</p>
+        <div class="text-[10px] font-mono text-cyan-600">📡 ${escapeHtml(inc.meshHop || 'BLE Hop #1')}</div>
       </div>
     `).join('');
   } else if (tabName === 'hospitals') {

@@ -467,6 +467,22 @@ class LocationService {
       window.dispatchEvent(new CustomEvent('resqnet-distress-packet', { detail: packet }));
     }
 
+    // Persist to backend API gateway if reachable
+    if (typeof fetch !== 'undefined') {
+      fetch('/api/v1/incidents/ingest', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: packet.title,
+          desc: packet.desc,
+          lat: packet.lat,
+          lng: packet.lng,
+          priority: packet.prio,
+          triage: packet.prioType === 'red' ? 'CRITICAL' : 'URGENT'
+        })
+      }).catch(() => {});
+    }
+
     return packet;
   }
 

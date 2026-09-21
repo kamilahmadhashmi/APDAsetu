@@ -14,6 +14,9 @@ import mimetypes
 from http.server import HTTPServer, SimpleHTTPRequestHandler
 from urllib.parse import urlparse, parse_qs
 
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+
 # Include backend directory in PYTHONPATH
 ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
 BACKEND_DIR = os.path.join(ROOT_DIR, 'backend')
@@ -45,6 +48,9 @@ class UnifiedAppHandler(SimpleHTTPRequestHandler):
         self.send_header('Access-Control-Allow-Origin', '*')
         self.send_header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
         self.send_header('Access-Control-Allow-Headers', 'Content-Type, Authorization')
+        self.send_header('X-Content-Type-Options', 'nosniff')
+        self.send_header('X-Frame-Options', 'SAMEORIGIN')
+        self.send_header('Referrer-Policy', 'strict-origin-when-cross-origin')
         self.send_header('Cache-Control', 'no-cache, no-store, must-revalidate')
         self.end_headers()
 
@@ -60,7 +66,8 @@ class UnifiedAppHandler(SimpleHTTPRequestHandler):
             query_params = parse_qs(parsed.query)
             params = {k: v[0] for k, v in query_params.items()}
             response_data = handle_api_request(path, method="GET", payload=params)
-            self._set_cors_headers(response_data.get("status_code", 200), 'application/json; charset=utf-8')
+            status = response_data.get("status_code", response_data.get("status", 200) if isinstance(response_data.get("status"), int) else 200)
+            self._set_cors_headers(status, 'application/json; charset=utf-8')
             self.wfile.write(json.dumps(response_data).encode('utf-8'))
             return
 
@@ -77,7 +84,13 @@ class UnifiedAppHandler(SimpleHTTPRequestHandler):
 
         # Handle API POST
         if path.startswith('/api/v1') and handle_api_request:
+            MAX_BODY_SIZE = 1024 * 1024  # 1 MB limit
             content_length = int(self.headers.get('Content-Length', 0))
+            if content_length > MAX_BODY_SIZE:
+                self._set_cors_headers(413)
+                self.wfile.write(json.dumps({"error": "Payload Too Large", "max_bytes": MAX_BODY_SIZE}).encode('utf-8'))
+                return
+
             post_data = self.rfile.read(content_length) if content_length > 0 else b'{}'
             try:
                 payload = json.loads(post_data.decode('utf-8'))
@@ -85,7 +98,8 @@ class UnifiedAppHandler(SimpleHTTPRequestHandler):
                 payload = {}
 
             response_data = handle_api_request(path, method="POST", payload=payload)
-            self._set_cors_headers(response_data.get("status_code", 200), 'application/json; charset=utf-8')
+            status = response_data.get("status_code", response_data.get("status", 200) if isinstance(response_data.get("status"), int) else 200)
+            self._set_cors_headers(status, 'application/json; charset=utf-8')
             self.wfile.write(json.dumps(response_data).encode('utf-8'))
             return
 
