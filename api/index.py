@@ -17,7 +17,18 @@ if backend_dir not in sys.path:
 
 from app.api.endpoints import handle_api_request
 
+MAX_CONTENT_LENGTH = 1_048_576  # 1 MB ceiling
+
 class handler(BaseHTTPRequestHandler):
+    def do_OPTIONS(self):
+        self.send_response(204)
+        self.send_header('Access-Control-Allow-Origin', '*')
+        self.send_header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
+        self.send_header('Access-Control-Allow-Headers', 'Content-Type, Authorization')
+        self.send_header('X-Content-Type-Options', 'nosniff')
+        self.send_header('X-Frame-Options', 'DENY')
+        self.end_headers()
+
     def do_GET(self):
         parsed = urlparse(self.path)
         path = parsed.path
@@ -29,6 +40,8 @@ class handler(BaseHTTPRequestHandler):
         self.send_response(200)
         self.send_header('Content-Type', 'application/json')
         self.send_header('Access-Control-Allow-Origin', '*')
+        self.send_header('X-Content-Type-Options', 'nosniff')
+        self.send_header('X-Frame-Options', 'DENY')
         self.end_headers()
         self.wfile.write(json.dumps(response_data).encode('utf-8'))
 
@@ -36,7 +49,19 @@ class handler(BaseHTTPRequestHandler):
         parsed = urlparse(self.path)
         path = parsed.path
 
-        content_length = int(self.headers.get('Content-Length', 0))
+        try:
+            content_length = int(self.headers.get('Content-Length', 0))
+        except (ValueError, TypeError):
+            content_length = 0
+
+        if content_length > MAX_CONTENT_LENGTH:
+            self.send_response(413)
+            self.send_header('Content-Type', 'application/json')
+            self.send_header('Access-Control-Allow-Origin', '*')
+            self.end_headers()
+            self.wfile.write(json.dumps({"error": "Payload too large. Maximum allowed size is 1MB."}).encode('utf-8'))
+            return
+
         post_data = self.rfile.read(content_length) if content_length > 0 else b'{}'
 
         try:
@@ -49,5 +74,7 @@ class handler(BaseHTTPRequestHandler):
         self.send_response(200)
         self.send_header('Content-Type', 'application/json')
         self.send_header('Access-Control-Allow-Origin', '*')
+        self.send_header('X-Content-Type-Options', 'nosniff')
+        self.send_header('X-Frame-Options', 'DENY')
         self.end_headers()
         self.wfile.write(json.dumps(response_data).encode('utf-8'))
