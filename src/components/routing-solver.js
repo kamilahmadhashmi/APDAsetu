@@ -1,5 +1,5 @@
 /* ==========================================================================
-   MULTI-OBJECTIVE RESOURCE ROUTING SOLVER COMPONENT WITH LIVE USER ORIGIN
+   MULTI-OBJECTIVE RESOURCE ROUTING SOLVER COMPONENT (GENUINE BACKEND ENGINE)
    ========================================================================== */
 
 import { t } from '../i18n.js';
@@ -8,11 +8,20 @@ import { locationService } from '../services/location-service.js';
 
 let solverChart = null;
 
+export function escapeHtml(str) {
+  if (str === null || str === undefined) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
 export function renderRoutingSolver(container) {
   const userLoc = locationService.getState();
   const nearestShelter = locationService.getNearestShelter();
   const nearestHospital = locationService.getNearestHospital();
-  const nearestRescue = locationService.getNearestRescueTeam();
 
   container.innerHTML = `
     <div style="display: flex; width: 100%; height: 100%; gap: 16px; padding: 16px;">
@@ -23,11 +32,11 @@ export function renderRoutingSolver(container) {
         <div class="glass-panel" style="padding: 20px;">
           <div class="panel-header" style="margin-bottom: 14px;">
             <span class="panel-title"><i data-lucide="sliders"></i> ${t('solver_title')}</span>
-            <span class="badge badge-cyan">ALGORITHM v4.2</span>
+            <span class="badge badge-cyan">FASTAPI DIJKSTRA SOLVER</span>
           </div>
 
           <p style="font-size: 11px; color: var(--text-muted); margin-bottom: 16px;">
-            Correlates distress severity, live user GPS origin (${userLoc.latitude.toFixed(4)}, ${userLoc.longitude.toFixed(4)}), flood depth, and hospital capacity to compute multi-objective evacuation routes.
+            Correlates live distress locations, user GPS coordinates (${userLoc.latitude.toFixed(4)}, ${userLoc.longitude.toFixed(4)}), flood depths, and real hospital bed capacity to compute Pareto-optimal evacuation routes.
           </p>
 
           <!-- Routing Origin Selector -->
@@ -70,33 +79,33 @@ export function renderRoutingSolver(container) {
           </div>
 
           <button class="btn btn-primary" id="btn-calculate-solver" style="width: 100%; justify-content: center; padding: 12px; margin-top: 8px; font-size: 13px;">
-            <i data-lucide="cpu"></i> ${t('compute_solver')}
+            <i data-lucide="cpu"></i> Compute Optimal Evacuation Corridors
           </button>
         </div>
 
         <!-- Calculated Impact Metrics Summary -->
         <div class="glass-panel" style="flex: 1; padding: 20px; display: flex; flex-direction: column; justify-content: center; gap: 16px; border-color: rgba(0,245,160,0.3);">
           <div style="font-size: 11px; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">
-            AEGIS Optimization System Impact
+            Live Dijkstra Optimization Impact
           </div>
 
           <div style="display: flex; align-items: baseline; gap: 12px;">
-            <span style="font-size: 42px; font-weight: 900; color: var(--accent-emerald); line-height: 1;">-42%</span>
+            <span style="font-size: 42px; font-weight: 900; color: var(--accent-emerald); line-height: 1;" id="stat-delay-reduction">-42%</span>
             <div>
               <strong style="color: var(--text-main); font-size: 14px;">${t('delay_reduction')}</strong>
-              <div style="font-size: 11px; color: var(--text-muted);">From avg 54 mins down to 31.4 mins</div>
+              <div style="font-size: 11px; color: var(--text-muted);" id="stat-delay-desc">Calculating from backend...</div>
             </div>
           </div>
 
           <hr style="border-color: rgba(0,0,0,0.08);">
 
           <div style="display: flex; justify-content: space-between; font-size: 12px;">
-            <span style="color: var(--text-muted);">Nearest Shelter Route:</span>
-            <strong style="color: var(--accent-emerald);">${nearestShelter ? nearestShelter.name.split(' ')[0] + ' (' + nearestShelter.formattedDistance + ')' : 'St. Jude (1.2 km)'}</strong>
+            <span style="color: var(--text-muted);">Target Evacuation Destination:</span>
+            <strong style="color: var(--accent-emerald);" id="stat-target-hub">Calculating...</strong>
           </div>
           <div style="display: flex; justify-content: space-between; font-size: 12px;">
-            <span style="color: var(--text-muted);">Nearest Trauma Center:</span>
-            <strong style="color: var(--accent-cyan);">${nearestHospital ? nearestHospital.name.split(' ')[0] + ' (' + nearestHospital.formattedDistance + ')' : 'Apex (2.7 km)'}</strong>
+            <span style="color: var(--text-muted);">Submerged Bottlenecks Avoided:</span>
+            <strong style="color: var(--accent-cyan);" id="stat-avoided-count">Calculating...</strong>
           </div>
         </div>
 
@@ -109,7 +118,7 @@ export function renderRoutingSolver(container) {
         <div class="glass-panel" style="flex: 1; display: flex; flex-direction: column; padding: 20px;">
           <div class="panel-header" style="margin-bottom: 12px;">
             <span class="panel-title"><i data-lucide="bar-chart-2"></i> ${t('comparison_title')}</span>
-            <span class="badge badge-emerald">42% FASTER EVACUATION</span>
+            <span class="badge badge-emerald" id="badge-faster-pct">OPTIMIZING ROUTE</span>
           </div>
 
           <div style="flex: 1; position: relative; width: 100%; min-height: 200px;">
@@ -120,47 +129,22 @@ export function renderRoutingSolver(container) {
         <!-- Task Allocation Summary Table -->
         <div class="glass-panel" style="padding: 16px;">
           <div class="panel-header" style="margin-bottom: 10px;">
-            <span class="panel-title"><i data-lucide="check-square"></i> Optimized Task Allocation Queue</span>
+            <span class="panel-title"><i data-lucide="check-square"></i> Live Fleet Allocation Queue (Backend Database)</span>
           </div>
 
           <table style="width: 100%; border-collapse: collapse; font-size: 12px; text-align: left;">
             <thead>
               <tr style="border-bottom: 1px solid var(--border-color); color: var(--text-muted);">
-                <th style="padding: 8px;">Target Origin</th>
-                <th style="padding: 8px;">Assigned Unit</th>
+                <th style="padding: 8px;">Target Origin / Incident</th>
+                <th style="padding: 8px;">Assigned Rescue Unit</th>
                 <th style="padding: 8px;">Destination Hub</th>
-                <th style="padding: 8px;">Est. ETA</th>
-                <th style="padding: 8px;">Hazard Avoidance</th>
+                <th style="padding: 8px;">Est. Transit ETA</th>
+                <th style="padding: 8px;">Dispatch Status</th>
               </tr>
             </thead>
-            <tbody>
-              <tr style="border-bottom: 1px solid rgba(0,0,0,0.05); background: rgba(14,165,233,0.05);">
-                <td style="padding: 8px; font-weight: 700; color: #0284c7;">👤 YOU (Field Operator)</td>
-                <td style="padding: 8px;">${nearestRescue ? nearestRescue.name : 'NDRF Boat Alpha'}</td>
-                <td style="padding: 8px;">${nearestShelter ? nearestShelter.name : 'St. Jude Relief Hub'}</td>
-                <td style="padding: 8px; color: var(--accent-emerald); font-weight: 700;">6.2 mins</td>
-                <td style="padding: 8px;"><span class="badge badge-emerald">CLEAR_CORRIDOR</span></td>
-              </tr>
-              <tr style="border-bottom: 1px solid rgba(0,0,0,0.05);">
-                <td style="padding: 8px; font-weight: 700; color: var(--accent-pink);">VIC-9041 (Rooftop 4)</td>
-                <td style="padding: 8px;">NDRF Alpha Boat Squad</td>
-                <td style="padding: 8px;">Apex General Hospital</td>
-                <td style="padding: 8px; color: var(--accent-emerald); font-weight: 700;">8.4 mins</td>
-                <td style="padding: 8px;"><span class="badge badge-cyan">EN_ROUTE</span></td>
-              </tr>
-              <tr style="border-bottom: 1px solid rgba(0,0,0,0.05);">
-                <td style="padding: 8px; font-weight: 700; color: var(--accent-pink);">VIC-9042 (Submerged Bus)</td>
-                <td style="padding: 8px;">Air Force Chopper 2</td>
-                <td style="padding: 8px;">NDRF Mobile Hub</td>
-                <td style="padding: 8px; color: var(--accent-emerald); font-weight: 700;">12.1 mins</td>
-                <td style="padding: 8px;"><span class="badge badge-amber">AIRLIFT_ZONE</span></td>
-              </tr>
+            <tbody id="solver-assignments-body">
               <tr>
-                <td style="padding: 8px; font-weight: 700; color: var(--accent-amber);">VIC-9043 (Medical Need)</td>
-                <td style="padding: 8px;">Coast Guard Amphib-1</td>
-                <td style="padding: 8px;">St. Jude Relief Hub</td>
-                <td style="padding: 8px; color: var(--accent-emerald); font-weight: 700;">15.0 mins</td>
-                <td style="padding: 8px;"><span class="badge badge-emerald">ASSIGNED</span></td>
+                <td colspan="5" style="padding: 16px; text-align: center; color: var(--text-muted);">Querying live Dijkstra routing engine...</td>
               </tr>
             </tbody>
           </table>
@@ -174,6 +158,7 @@ export function renderRoutingSolver(container) {
   setTimeout(() => {
     initSolverChart();
     attachSolverEvents();
+    executeLiveSolver();
     if (window.lucide) window.lucide.createIcons();
   }, 100);
 }
@@ -185,18 +170,18 @@ function initSolverChart() {
   solverChart = new Chart(ctxCanvas, {
     type: 'bar',
     data: {
-      labels: ['Field User (You)', 'Victim Sector A', 'Victim Sector B', 'Hospital Transit D'],
+      labels: ['Victim Sector A', 'Victim Sector B', 'Victim Sector C', 'Hospital Transit D'],
       datasets: [
         {
-          label: 'Traditional Naive Dispatch (Mins)',
-          data: [18, 48, 62, 40],
+          label: 'Traditional Flooded Route (Mins)',
+          data: [48, 62, 55, 40],
           backgroundColor: 'rgba(255, 42, 109, 0.4)',
           borderColor: '#ff2a6d',
           borderWidth: 1.5
         },
         {
-          label: 'AEGIS AI Optimized Solver (Mins)',
-          data: [6.2, 26, 34, 22],
+          label: 'AapdaSetu Dijkstra Detour (Mins)',
+          data: [28, 36, 32, 23],
           backgroundColor: 'rgba(0, 245, 160, 0.5)',
           borderColor: '#00f5a0',
           borderWidth: 1.5
@@ -225,6 +210,97 @@ function initSolverChart() {
   });
 }
 
+async function executeLiveSolver() {
+  const userLoc = locationService.getState();
+  const depthInput = document.getElementById('rng-solver-depth');
+  const bedsInput = document.getElementById('rng-solver-beds');
+  const riskInput = document.getElementById('rng-solver-risk');
+
+  const depth = depthInput ? parseFloat(depthInput.value) / 10.0 : 1.8;
+  const beds = bedsInput ? parseFloat(bedsInput.value) / 100.0 : 0.75;
+  const risk = riskInput ? parseFloat(riskInput.value) : 3.0;
+
+  const btn = document.getElementById('btn-calculate-solver');
+  if (btn) btn.innerHTML = '<span class="material-symbols-outlined text-xs animate-spin">sync</span> Solving Graph Equations...';
+
+  try {
+    const payload = {
+      origin_lat: userLoc.latitude,
+      origin_lng: userLoc.longitude,
+      flood_depth_m: depth,
+      bed_priority_weight: beds,
+      storm_risk_factor: risk
+    };
+
+    const res = await fetch('/api/v1/routing/solver', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+
+    // 1. Update Badge & Header
+    const badgeEl = document.getElementById('badge-faster-pct');
+    if (badgeEl) badgeEl.textContent = `${data.delay_reduction_pct}% FASTER EVACUATION`;
+
+    const statRedEl = document.getElementById('stat-delay-reduction');
+    if (statRedEl) statRedEl.textContent = `-${data.delay_reduction_pct}%`;
+
+    const statDescEl = document.getElementById('stat-delay-desc');
+    if (statDescEl) statDescEl.textContent = `From avg ${data.naive_avg_mins}m down to ${data.solver_avg_mins}m`;
+
+    const statTargetEl = document.getElementById('stat-target-hub');
+    if (statTargetEl && data.target_hospital) {
+      statTargetEl.textContent = `${data.target_hospital.name} (${data.target_hospital.occupied}/${data.target_hospital.total} beds)`;
+    }
+
+    const statAvoidEl = document.getElementById('stat-avoided-count');
+    if (statAvoidEl) {
+      statAvoidEl.textContent = `${data.avoided_flooded_roads ? data.avoided_flooded_roads.length : 0} Corridors Bypassed`;
+    }
+
+    // 2. Update Comparison Chart with Real Backend Calculations
+    if (solverChart && data.chart_comparison) {
+      solverChart.data.labels = data.chart_comparison.sectors;
+      solverChart.data.datasets[0].data = data.chart_comparison.naive_dispatch_mins;
+      solverChart.data.datasets[1].data = data.chart_comparison.aegis_solver_mins;
+      solverChart.update();
+    }
+
+    // 3. Dynamically Populate Task Allocation Queue from Backend DB
+    const tableBody = document.getElementById('solver-assignments-body');
+    if (tableBody && Array.isArray(data.assignments)) {
+      tableBody.innerHTML = data.assignments.map((item, idx) => `
+        <tr style="border-bottom: 1px solid rgba(0,0,0,0.05); ${idx === 0 ? 'background: rgba(14,165,233,0.05);' : ''}">
+          <td style="padding: 8px; font-weight: 700; color: ${idx === 0 ? '#0284c7' : '#ec4899'};">
+            ${escapeHtml(item.victim_id)}
+          </td>
+          <td style="padding: 8px; font-weight: 500;">
+            ${escapeHtml(item.unit_id)}
+          </td>
+          <td style="padding: 8px;">
+            ${escapeHtml(item.hospital_id)}
+          </td>
+          <td style="padding: 8px; color: var(--accent-emerald); font-weight: 700;">
+            ${escapeHtml(item.est_eta_mins)} mins
+          </td>
+          <td style="padding: 8px;">
+            <span class="badge ${idx === 0 ? 'badge-emerald' : 'badge-cyan'}">${escapeHtml(item.status)}</span>
+          </td>
+        </tr>
+      `).join('');
+    }
+
+  } catch (err) {
+    console.error('Failed to execute live routing solver:', err);
+  } finally {
+    if (btn) btn.innerHTML = '<i data-lucide="cpu"></i> Compute Optimal Evacuation Corridors';
+    if (window.lucide) window.lucide.createIcons();
+  }
+}
+
 function attachSolverEvents() {
   document.getElementById('rng-solver-depth')?.addEventListener('input', (e) => {
     document.getElementById('val-solver-depth').textContent = `${(e.target.value / 10).toFixed(1)} meters`;
@@ -240,19 +316,5 @@ function attachSolverEvents() {
     document.getElementById('val-solver-risk').textContent = labels[val] || 'Moderate (3.2x)';
   });
 
-  document.getElementById('btn-calculate-solver')?.addEventListener('click', () => {
-    const userLoc = locationService.getState();
-    const nearestShelter = locationService.getNearestShelter();
-
-    showSystemPrompt({
-      title: 'Dynamic Graph Optimization Complete',
-      message: `Re-calculated evacuation corridors from your position (${userLoc.latitude.toFixed(4)}, ${userLoc.longitude.toFixed(4)}) to ${nearestShelter?.name || 'St. Jude Hub'}.`,
-      details: 'AVERAGE DISPATCH TIME REDUCTION: 42.4% (54.0m -> 31.2m)\nPREVENTED SUPPLY HOARDING: 99.2%\nHOSPITAL CAPACITY BALANCING: OPTIMAL\nHAZARD PENALTY: Avoided 2 submerged flyover bottlenecks'
-    });
-
-    if (solverChart) {
-      solverChart.data.datasets[1].data = [5.8, 24, 30, 19];
-      solverChart.update();
-    }
-  });
+  document.getElementById('btn-calculate-solver')?.addEventListener('click', executeLiveSolver);
 }

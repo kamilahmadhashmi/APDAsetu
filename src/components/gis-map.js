@@ -373,6 +373,30 @@ function initLeafletMap() {
     })
     .catch(() => {});
 
+  // Fetch live operational hospitals from persistent database
+  fetch('/api/v1/hospitals')
+    .then(r => r.json())
+    .then(data => {
+      if (data && Array.isArray(data.hospitals) && data.hospitals.length > 0) {
+        mockHospitals.length = 0;
+        data.hospitals.forEach(h => mockHospitals.push(h));
+        plotHospitalMarkers(mockHospitals);
+      }
+    })
+    .catch(() => {});
+
+  // Fetch live rescue fleet from persistent database
+  fetch('/api/v1/fleet')
+    .then(r => r.json())
+    .then(data => {
+      if (data && Array.isArray(data.fleet) && data.fleet.length > 0) {
+        mockUtilityFleet.length = 0;
+        data.fleet.forEach(f => mockUtilityFleet.push(f));
+        plotFleetMarkers(mockUtilityFleet);
+      }
+    })
+    .catch(() => {});
+
   // Real-time dispatch listener
   window.addEventListener('aegis-dispatch-event', (e) => {
     if (e.detail && e.detail.type === 'NEW_DISTRESS_INCIDENT') {

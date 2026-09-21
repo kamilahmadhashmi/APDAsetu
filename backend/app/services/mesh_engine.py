@@ -177,13 +177,50 @@ class MeshEngine:
         }
 
     def get_mesh_topology(self, db: Session) -> Dict[str, Any]:
-        active_units = db.query(FleetUnit).filter(FleetUnit.status != "OFFLINE").count()
+        fleet_units = db.query(FleetUnit).all()
+        nodes = [
+            {"id": "NODE-VIC-01", "name": "Citizen SOS Beacon (You)", "type": "victim", "battery": "42%", "status": "ISOLATED", "lat": 20.2961, "lng": 85.8245},
+            {"id": "NODE-HOP-A", "name": "Field Phone Mesh Relay (Hop #1)", "type": "relay", "battery": "68%", "status": "RELAYING", "lat": 20.2920, "lng": 85.8200},
+            {"id": "NODE-HOP-B", "name": "Substation Repeater (Hop #2)", "type": "relay", "battery": "85%", "status": "RELAYING", "lat": 20.2880, "lng": 85.8150},
+        ]
+        
+        # Include database fleet units as mesh nodes
+        for u in fleet_units[:2]:
+            nodes.append({
+                "id": u.id,
+                "name": u.name,
+                "type": "volunteer",
+                "battery": "94%",
+                "status": u.status,
+                "lat": u.lat,
+                "lng": u.lng
+            })
+            
+        nodes.append({
+            "id": "NODE-UPLINK",
+            "name": "Command Satellite Gateway",
+            "type": "uplink",
+            "battery": "100%",
+            "status": "COMMAND_CENTER",
+            "lat": 20.3200,
+            "lng": 85.8100
+        })
+        
+        fleet_hop_id = nodes[3]["id"] if len(nodes) > 3 else "NODE-HOP-B"
+        
         return {
-            "protocol": "AEGIS BLE / Wi-Fi Direct Mesh v2.4 (AES-256-GCM Authenticated)",
-            "active_nodes_count": max(5, active_units),
+            "protocol": "AEGIS BLE 5.3 / Wi-Fi Direct Mesh (AES-256-GCM)",
+            "active_nodes_count": len(nodes),
             "delivery_success_pct": 99.8,
-            "avg_rssi_dbm": -71,
-            "crypto_cipher": "AES-256-GCM (NIST SP 800-38D)"
+            "avg_rssi_dbm": -68,
+            "crypto_cipher": "AES-256-GCM (NIST SP 800-38D)",
+            "nodes": nodes,
+            "links": [
+                {"source": "NODE-VIC-01", "target": "NODE-HOP-A", "rssi": -65, "loss_pct": 0.1},
+                {"source": "NODE-HOP-A", "target": "NODE-HOP-B", "rssi": -72, "loss_pct": 0.2},
+                {"source": "NODE-HOP-B", "target": fleet_hop_id, "rssi": -68, "loss_pct": 0.0},
+                {"source": fleet_hop_id, "target": "NODE-UPLINK", "rssi": -58, "loss_pct": 0.0}
+            ]
         }
 
 mesh_engine_service = MeshEngine()

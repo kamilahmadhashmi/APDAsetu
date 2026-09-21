@@ -59,6 +59,33 @@ class LocationService {
 
     this.initBroadcastChannel();
     this.initStorageListener();
+    this.syncDatabaseEntities();
+  }
+
+  async syncDatabaseEntities() {
+    try {
+      const [hospRes, fleetRes] = await Promise.all([
+        fetch('/api/v1/hospitals'),
+        fetch('/api/v1/fleet')
+      ]);
+      if (hospRes.ok) {
+        const hospData = await hospRes.json();
+        if (hospData && Array.isArray(hospData.hospitals) && hospData.hospitals.length > 0) {
+          mockHospitals.length = 0;
+          hospData.hospitals.forEach(h => mockHospitals.push(h));
+        }
+      }
+      if (fleetRes.ok) {
+        const fleetData = await fleetRes.json();
+        if (fleetData && Array.isArray(fleetData.fleet) && fleetData.fleet.length > 0) {
+          mockUtilityFleet.length = 0;
+          fleetData.fleet.forEach(f => mockUtilityFleet.push(f));
+        }
+      }
+      this.notifySubscribers();
+    } catch (e) {
+      console.warn('LocationService running in offline/cached mode:', e);
+    }
   }
 
   initBroadcastChannel() {
