@@ -22,10 +22,13 @@ from app.models.schemas import (
     RoutingSolverRequest,
     RoutingSolverResponse
 )
+import json
+from app.db import models
 from app.services.mesh_engine import mesh_engine_service
 from app.services.routing_engine import routing_solver_service
 from app.services.vision_engine import vision_engine_service
 from app.services.weather_engine import weather_engine_service
+from app.services.lora_codec import lora_codec_service
 from app.core.websocket_manager import ws_manager
 
 router = APIRouter(prefix="/api/v1", tags=["AapdaSetu Dispatch"])
@@ -108,6 +111,75 @@ def list_roads(db: Session = Depends(get_db)):
 @router.get("/mesh/topology")
 def get_mesh_topology(db: Session = Depends(get_db)):
     return mesh_engine_service.get_mesh_topology(db)
+
+@router.post("/mesh/radio/raw")
+async def ingest_raw_radio_frame(payload: Dict[str, Any], db: Session = Depends(get_db)):
+    """
+    Ingests raw binary or hex frames from physical Web Bluetooth / Web Serial LoRa transceivers.
+    Unpacks LAF v1 framing, validates CRC16, and records the distress beacon into aegis.db.
+    """
+    raw_hex = payload.get("raw_hex", "").replace(" ", "").replace("0x", "")
+    if not raw_hex:
+        raise HTTPException(status_code=400, detail="Missing raw_hex parameter")
+
+    try:
+        frame_bytes = bytes.fromhex(raw_hex)
+        decoded = lora_codec_service["decode"](frame_bytes)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=f"LoRa frame decode failed: {str(e)}")
+
+    rssi = payload.get("rssi_dbm", -72.0)
+    snr = payload.get("snr_db", 9.0)
+
+    # Persist as incident in database
+    inc_id = f"LORA-{decoded['sender_node_id'][-4:]}-{decoded['seq_num']}"
+    title = f"Physical LoRa Distress Beacon ({decoded['sender_node_id']})"
+    if decoded.get("payload_json") and isinstance(decoded["payload_json"], dict):
+        title = decoded["payload_json"].get("caller", title)
+        desc = decoded["payload_json"].get("situation", decoded["payload_text"])
+    else:
+        desc = decoded["payload_text"] or f"Over-the-air LoRa beacon received at RSSI {rssi}dBm"
+
+    new_inc = models.Incident(
+        id=inc_id,
+        title=title,
+        priority=decoded["triage_name"],
+        prio_type="red" if decoded["triage"] >= 2 else ("amber" if decoded["triage"] == 1 else "emerald"),
+        time="Just now",
+        desc=desc,
+        tags_json=json.dumps(["LoRa Radio", "Physical Transceiver", f"RSSI: {rssi}dBm"]),
+        lat=decoded["lat"],
+        lng=decoded["lng"],
+        triage=decoded["triage_name"],
+        mesh_hop=f"LoRa Hop #{decoded['hop_count']}",
+        battery=f"{decoded['battery_pct']}%",
+        packet_hash=decoded["crc"]
+    )
+
+    existing = db.query(models.Incident).filter(models.Incident.id == inc_id).first()
+    if existing:
+        db.merge(new_inc)
+    else:
+        db.add(new_inc)
+    db.commit()
+
+    # Real-time WebSocket broadcast to all connected command center operators
+    await ws_manager.broadcast({
+        "type": "NEW_DISTRESS_INCIDENT",
+        "incident": new_inc.to_dict(),
+        "source": "PHYSICAL_LORA_RADIO",
+        "rf_meta": {
+            "rssi_dbm": rssi,
+            "snr_db": snr,
+            "sender_node_id": decoded["sender_node_id"]
+        }
+    })
+
+    return {
+        "status": "PROCESSED",
+        "decoded": decoded,
+        "incident": new_inc.to_dict()
+    }
 
 # --------------------------------------------------------------------------
 # 5. Computer Vision & Aerial Drone Detection

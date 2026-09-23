@@ -202,6 +202,103 @@ def test_offline_vendor_assets():
 
     print("  [PASS] All air-gapped vendor scripts, stylesheets, and PWA shell served with 200 OK.")
 
+def test_lora_binary_codec():
+    print("[10/11] Testing Sub-GHz LoRa Binary Aegis Frame (LAF v1) Codec & CRC16...")
+    from app.services.lora_codec import encode_packet, decode_packet, crc16_ccitt, PacketType, TriageLevel
+
+    # 1. Standard CCITT test vector check
+    assert crc16_ccitt(b"123456789") == 0x29B1, "CRC16-CCITT standard test vector failure"
+
+    # 2. Encode realistic over-the-air distress chirp
+    raw_frame = encode_packet(
+        packet_type=PacketType.SOS_BEACON,
+        seq_num=42,
+        hop_count=2,
+        sender_node_id=0xCAFE0001,
+        lat=20.29851,
+        lng=85.82603,
+        triage=TriageLevel.EMERGENCY_SOS,
+        battery_pct=47,
+        payload='{"danger":"Flood surge breach","trapped":5}'
+    )
+
+    assert len(raw_frame) > 22
+    assert raw_frame[0] == 0xAE and raw_frame[1] == 0x61  # Magic bytes
+
+    # 3. Decode frame
+    decoded = decode_packet(raw_frame)
+    assert decoded["magic"].lower() == "0xae61"
+    assert decoded["packet_type"] == 1
+    assert decoded["packet_type_name"] == "SOS_BEACON"
+    assert decoded["seq_num"] == 42
+    assert decoded["hop_count"] == 2
+    assert decoded["sender_node_id"].lower() == "0xcafe0001"
+    assert abs(decoded["lat"] - 20.29851) < 0.00001
+    assert abs(decoded["lng"] - 85.82603) < 0.00001
+    assert decoded["triage"] == 3
+    assert decoded["triage_name"] == "EMERGENCY_SOS"
+    assert decoded["battery_pct"] == 47
+    assert decoded["crc_valid"] is True
+    assert "Flood surge breach" in decoded["payload"]
+
+    # 4. Verify corrupted byte causes CRC rejection
+    corrupted = bytearray(raw_frame)
+    corrupted[10] ^= 0xFF
+    try:
+        decode_packet(bytes(corrupted))
+        assert False, "Should have rejected corrupted packet with CRC mismatch"
+    except ValueError as e:
+        assert "CRC16 validation failed" in str(e)
+
+    print("  [PASS] LAF v1 binary frame serialization, microdegree GPS packing, and CRC16-CCITT verified.")
+
+def test_raw_radio_packet_ingest():
+    print("[11/11] Testing POST /api/v1/mesh/radio/raw Hardware Ingest Gateway...")
+    from app.services.lora_codec import encode_packet, PacketType, TriageLevel
+
+    # Formulate valid radio chirp
+    packet = encode_packet(
+        packet_type=PacketType.SOS_BEACON,
+        seq_num=88,
+        hop_count=1,
+        sender_node_id=0xAA11BB22,
+        lat=20.3012,
+        lng=85.8340,
+        triage=TriageLevel.CRITICAL,
+        battery_pct=65,
+        payload='{"situation":"Medical evacuation requested","people":3}'
+    )
+    raw_hex = packet.hex()
+
+    # Ingest through REST endpoint
+    res = client.post("/api/v1/mesh/radio/raw", json={
+        "raw_hex": raw_hex,
+        "rssi_dbm": -84,
+        "snr_db": 7.8,
+        "freq_mhz": 868.1
+    })
+
+    assert res.status_code == 200
+    data = res.json()
+    assert data["status"] == "PROCESSED"
+    assert data["decoded"]["crc_valid"] is True
+    assert data["decoded"]["sender_node_id"].lower() == "0xaa11bb22"
+    assert data["decoded"]["triage_name"] == "CRITICAL"
+    assert data["incident"]["id"] is not None
+
+    # Test corrupted hex packet rejection
+    bad_hex = raw_hex[:-4] + "DEAD"
+    res_bad = client.post("/api/v1/mesh/radio/raw", json={
+        "raw_hex": bad_hex,
+        "rssi_dbm": -90,
+        "snr_db": 3.0,
+        "freq_mhz": 868.1
+    })
+    assert res_bad.status_code == 400
+    assert "CRC16" in res_bad.json()["detail"]
+
+    print("  [PASS] Hardware raw radio packet ingested, validated, persisted, and broadcasted to dispatch mesh.")
+
 def run_all():
     print("\n==========================================================================")
     print("AAPDASETU PRODUCTION SYSTEM VERIFICATION TEST SUITE")
@@ -215,7 +312,10 @@ def run_all():
     test_security_hardening()
     test_routing_network_and_calculation()
     test_offline_vendor_assets()
-    print("\nALL 9 PRODUCTION SYSTEM TESTS PASSED PERFECTLY!\n")
+    test_lora_binary_codec()
+    test_raw_radio_packet_ingest()
+    print("\nALL 11 PRODUCTION SYSTEM TESTS PASSED PERFECTLY!\n")
 
 if __name__ == "__main__":
     run_all()
+
