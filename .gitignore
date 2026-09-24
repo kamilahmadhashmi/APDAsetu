@@ -22,3 +22,7 @@ npm-debug.log*
 
 # Node modules (if any)
 node_modules/
+
+# Test cache
+.pytest_cache/
+

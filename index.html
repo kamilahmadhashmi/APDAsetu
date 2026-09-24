@@ -115,6 +115,7 @@
     <!-- Header -->
     <div class="px-6 pb-6 pt-2 border-b border-outline-variant">
       <h1 class="text-xl font-bold text-primary tracking-tight" data-i18n="dispatch_center">Dispatch Center</h1>
+      <div id="sidebar-mode-badge" class="mt-2.5 text-[10px] font-mono font-bold px-2.5 py-1 rounded hidden"></div>
       <div class="flex items-center gap-3 mt-4">
         <div class="w-8 h-8 rounded-full bg-secondary-container flex items-center justify-center shrink-0">
           <span class="material-symbols-outlined text-primary" style="font-variation-settings: 'FILL' 1; font-size: 18px;">admin_panel_settings</span>
@@ -174,6 +175,23 @@
   <!-- Main Content Shell -->
   <div class="flex-1 flex flex-col h-screen min-w-0 bg-surface-container-lowest">
     
+    <!-- Dual-Mode Environment High-Visibility Banner Strip -->
+    <div id="instance-mode-banner" class="w-full px-3 sm:px-6 py-2 flex items-center justify-between text-xs font-mono font-bold shrink-0 transition-all border-b z-50 bg-slate-900 text-white border-slate-700">
+      <div class="flex items-center gap-2.5">
+        <span id="banner-mode-pill" class="px-2.5 py-0.5 rounded text-[11px] flex items-center gap-1.5 uppercase font-black tracking-wider shadow-sm bg-slate-700 text-white">
+          <span class="w-2.5 h-2.5 rounded-full bg-slate-400 animate-pulse" id="banner-mode-dot"></span>
+          <span id="banner-mode-title">CONNECTING INSTANCE...</span>
+        </span>
+        <span id="banner-mode-desc" class="hidden md:inline font-sans text-xs font-medium opacity-90">Initializing dual-mode architecture...</span>
+      </div>
+      <div class="flex items-center gap-2.5">
+        <span id="banner-db-pill" class="hidden lg:inline-block px-2 py-0.5 rounded bg-black/25 text-[10px] font-mono font-bold uppercase tracking-wider"></span>
+        <a id="banner-switch-link" href="#" class="px-3 py-1 rounded text-xs font-bold transition-all flex items-center gap-1 shadow-sm bg-white/10 hover:bg-white/20 text-white">
+          <span id="banner-switch-label">Switch Instance</span> ↗
+        </a>
+      </div>
+    </div>
+
     <!-- TopNavBar Component -->
     <header class="w-full h-16 border-b border-outline-variant bg-surface flex justify-between items-center px-3 sm:px-6 sticky top-0 z-50 shrink-0">
       <!-- Brand Logo & Title -->
@@ -185,7 +203,8 @@
 
         <span class="text-lg sm:text-xl font-black tracking-tighter text-primary flex items-center gap-2">
           <span id="brand-logo-text" data-i18n="brand_name">AapdaSetu</span> 
-          <span class="text-[10px] font-mono font-bold px-1.5 py-0.5 bg-black text-white rounded" id="brand-tag-text" data-i18n="brand_tag">v4.0</span>
+          <span class="text-[10px] font-mono font-bold px-1.5 py-0.5 bg-black text-white rounded" id="brand-tag-text" data-i18n="brand_tag">v4.1</span>
+          <span id="mode-indicator-badge" class="hidden sm:inline-flex items-center gap-1.5 text-[10px] font-mono font-bold px-2 py-0.5 rounded transition-all"></span>
         </span>
         
         <!-- Main Top Nav Links (Visible on ultra-wide screens only) -->
@@ -409,6 +428,6 @@
     </div>
   </div>
 
-  <script type="module" src="src/app.js"></script>
+  <script type="module" src="src/app.js?v=4.2.0"></script>
 </body>
 </html>

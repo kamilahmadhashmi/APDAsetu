@@ -142,3 +142,50 @@
 .custom-user-gps-marker {
   transition: transform 0.1s linear;
 }
+
+/* ==========================================================================
+   DUAL-MODE INSTANCE VISUAL IDENTITY (HIGH CONTRAST)
+   ========================================================================== */
+
+/* Mode 1: REAL DATA INSTANCE (EMERALD / FOREST MILITARY) */
+body.mode-real {
+  border-top: 4px solid #10b981 !important;
+}
+body.mode-real header {
+  border-bottom: 2px solid #059669 !important;
+  background-color: #f0fdf4 !important;
+}
+body.mode-real #sidebar-nav {
+  border-right: 2px solid #059669 !important;
+  background-color: #f8fafc !important;
+}
+body.mode-real .nav-sidebar-tab.active {
+  background-color: #064e3b !important;
+  color: #a7f3d0 !important;
+  border-left: 4px solid #10b981 !important;
+}
+body.mode-real #map-wrap {
+  box-shadow: inset 0 0 0 2px rgba(16, 185, 129, 0.45);
+}
+
+/* Mode 2: SIMULATION INSTANCE (ROYAL PURPLE / TACTICAL SANDBOX) */
+body.mode-simulated {
+  border-top: 4px solid #a855f7 !important;
+}
+body.mode-simulated header {
+  border-bottom: 2px solid #7c3aed !important;
+  background-color: #faf5ff !important;
+}
+body.mode-simulated #sidebar-nav {
+  border-right: 2px solid #7c3aed !important;
+  background-color: #faf5ff !important;
+}
+body.mode-simulated .nav-sidebar-tab.active {
+  background-color: #3b0764 !important;
+  color: #e9d5ff !important;
+  border-left: 4px solid #a855f7 !important;
+}
+body.mode-simulated #map-wrap {
+  box-shadow: inset 0 0 0 2px rgba(168, 85, 247, 0.45);
+}
+

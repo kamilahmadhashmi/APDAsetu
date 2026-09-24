@@ -102,25 +102,36 @@ python -m venv .venv
 pip install -r requirements.txt
 ```
 
-### 2. Launching the Production Server
+### 2. Dual-Mode Local Execution (Real Data vs Simulated Data)
 
-#### Option A: FastAPI ASGI Server (Recommended)
-```powershell
-.\.venv\Scripts\python -m uvicorn backend.main:app --reload --host 0.0.0.0 --port 8000
+AapdaSetu supports running **TWO completely separate local instances** concurrently or independently:
+
+| Instance | Mode | Frontend URL | Backend API | Database | Data Sources |
+|---|---|---|---|---|---|
+| **Instance 1** | **REAL DATA** | `http://localhost:3000` | `http://127.0.0.1:5000` | `backend/aegis_real.db` | Open-Meteo High-Resolution Live Stream, OpenStreetMap Overpass API, GDACS RSS/CAP Feed |
+| **Instance 2** | **SIMULATED DATA** | `http://localhost:3001` | `http://127.0.0.1:5001` | `backend/aegis_simulated.db` | Deterministic Mock Scenarios, Pre-seeded Hospitals/Fleet, Synthetic Dijkstra Flood Graph |
+
+#### Option A: Run Both Instances Concurrently (Recommended)
+```bash
+npm run dev:both
+# or via Python launcher:
+.\.venv\Scripts\python run.py --mode both
 ```
-- **Command & Control Dashboard**: [http://localhost:8000](http://localhost:8000)
-- **Smartphone Simulator**: [http://localhost:8000/simulation](http://localhost:8000/simulation)
-- **Interactive OpenAPI / Swagger Docs**: [http://localhost:8000/docs](http://localhost:8000/docs)
-- **Live WebSocket Hub**: `ws://localhost:8000/ws/dispatch`
+- Open **Real Data Mode**: [http://localhost:3000](http://localhost:3000) (Header shows green `● LIVE DATA` badge)
+- Open **Simulated Data Mode**: [http://localhost:3001](http://localhost:3001) (Header shows purple `● SIMULATION MODE` badge)
 
-#### Option B: Standalone Zero-Dependency Python Server
-```powershell
-.\.venv\Scripts\python server.py 8000
+#### Option B: Run Only Instance 1 (Real Data Mode)
+```bash
+npm run dev:real
+# or via Python launcher:
+.\.venv\Scripts\python run.py --mode real
 ```
 
-#### Option C: Hardened Node.js Static Server
-```powershell
-node serve.js 3000
+#### Option C: Run Only Instance 2 (Simulated Data Mode)
+```bash
+npm run dev:simulated
+# or via Python launcher:
+.\.venv\Scripts\python run.py --mode simulated
 ```
 
 ---
@@ -177,11 +188,16 @@ The container includes:
 ## 🧪 Running the Verification Test Suites
 
 ```powershell
-# Run backend unit, cryptographic, and routing integration tests
-.\.venv\Scripts\pytest backend/test_backend.py
+# Run the full dual-mode provider and backend unit test suite
+.\.venv\Scripts\pytest backend/test_backend.py backend/test_providers.py -v
+# or:
+npm test
 
 # Run server hardening and crash resilience verification tests
 .\.venv\Scripts\python backend/test_servers.py
+
+# Run end-to-end concurrent dual-instance live test
+.\.venv\Scripts\python backend/test_dual_mode_e2e.py
 ```
 
 ---

@@ -1,0 +1,28 @@
+{
+  "name": "aapdasetu-aegis-mesh",
+  "version": "4.1.0",
+  "description": "AapdaSetu / AEGIS-MESH Dual-Mode Emergency Disaster Inundation & Logistics Engine",
+  "main": "serve.js",
+  "scripts": {
+    "start": "node scripts/run-mode.js simulated",
+    "dev": "node scripts/run-mode.js both",
+    "dev:real": "node scripts/run-mode.js real",
+    "dev:simulated": "node scripts/run-mode.js simulated",
+    "dev:both": "node scripts/run-mode.js both",
+    "start:real": "node scripts/run-mode.js real",
+    "start:simulated": "node scripts/run-mode.js simulated",
+    "start:both": "node scripts/run-mode.js both",
+    "test": "node scripts/run-tests.js"
+  },
+  "keywords": [
+    "disaster-response",
+    "mesh-network",
+    "lora",
+    "dijkstra-routing",
+    "open-meteo",
+    "gdacs",
+    "dual-mode"
+  ],
+  "author": "AapdaSetu Team",
+  "license": "Apache-2.0"
+}

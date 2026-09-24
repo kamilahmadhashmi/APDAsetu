@@ -21,17 +21,18 @@ import uvicorn
 
 from app.db.database import Base, engine, SessionLocal
 from app.db import models
-from app.services.mesh_engine import mesh_engine_service
+from app.providers import get_data_provider, get_data_mode
 from app.api.endpoints import router, handle_api_request
 from app.core.websocket_manager import ws_manager
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Lifespan startup: initialize database tables and seed records
+    # Lifespan startup: initialize database tables and seed records according to DATA_MODE
     Base.metadata.create_all(bind=engine)
     db = SessionLocal()
     try:
-        mesh_engine_service.seed_initial_data_if_empty(db)
+        provider = get_data_provider()
+        provider.initialize_database(db)
     finally:
         db.close()
     yield

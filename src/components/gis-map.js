@@ -63,8 +63,13 @@ let currentRainfall = 85;
 let currentDischarge = 1800;
 let currentWaterLevel = 2.8;
 let isSurgeModeActive = false;
+let isRealMode = false;
 
 export function renderGisDashboard(container) {
+  isRealMode = window.__SERVER_DATA_MODE__ === 'real' || window.__IS_REAL_MODE__ === true || window.__AAPDASETU_MODE__ === 'real';
+  if (isRealMode) {
+    mockIncidents.length = 0; // Ensure baseline mock incidents are never shown in real mode
+  }
   const forecast = floodPredictionService.calculateForecast(currentRainfall, currentDischarge, currentWaterLevel);
 
   container.innerHTML = `
@@ -91,7 +96,7 @@ export function renderGisDashboard(container) {
         <!-- REAL-TIME RISING FLOOD SURGE ENGINE FOOTER -->
         <div class="p-4 border-t border-outline-variant bg-slate-950 text-white flex flex-col gap-3 shrink-0">
           <div class="flex justify-between items-center">
-            <span class="text-xs font-bold uppercase text-red-400 flex items-center gap-1">
+            <span class="text-xs font-bold uppercase text-red-400 flex items-center gap-1" id="lbl-surge-title">
               <span class="material-symbols-outlined text-sm animate-pulse text-red-500">water</span> Real-Time Rising Flood Engine
             </span>
             <span class="px-2 py-0.5 bg-red-600 text-white font-mono text-[10px] font-bold uppercase rounded animate-pulse" id="lbl-surge-status">
@@ -220,6 +225,12 @@ export function renderGisDashboard(container) {
         <div class="flex-1 relative w-full min-h-0" id="map-wrap">
           <div id="leaflet-container" class="w-full h-full bg-slate-900"></div>
           <div class="absolute inset-0 map-grid-overlay pointer-events-none"></div>
+
+          <!-- Floating Map Mode Watermark Badge (Top-Left) -->
+          <div id="map-mode-pill" class="absolute top-3 left-3 z-[400] px-3.5 py-1.5 rounded shadow-xl text-xs font-mono font-bold flex items-center gap-2 pointer-events-none ${isRealMode ? 'bg-emerald-950/95 text-emerald-200 border border-emerald-500 shadow-emerald-950/50' : 'bg-purple-950/95 text-purple-200 border border-purple-500 shadow-purple-950/50'}">
+            <span class="w-2.5 h-2.5 rounded-full ${isRealMode ? 'bg-emerald-400 animate-pulse' : 'bg-purple-400 animate-pulse'}"></span>
+            <span id="map-mode-label">${isRealMode ? 'INSTANCE 1: LIVE RADAR & OVERPASS ACTIVE (PORT 3000)' : 'INSTANCE 2: SYNTHETIC TEST BED SCENARIO (PORT 3001)'}</span>
+          </div>
 
           <!-- Floating Map View Controls (Top-Right) -->
           <div class="absolute right-4 top-4 flex flex-col gap-1.5 z-[400]">
@@ -406,6 +417,11 @@ function initLeafletMap() {
     }
   });
 
+  isRealMode = window.__SERVER_DATA_MODE__ === 'real' || window.__IS_REAL_MODE__ === true || window.__AAPDASETU_MODE__ === 'real';
+  if (isRealMode) {
+    mockIncidents.length = 0;
+  }
+
   updateFloodPolygon();
   renderRoadPolylines();
   plotIncidentMarkers(mockIncidents);
@@ -414,55 +430,96 @@ function initLeafletMap() {
   plotShelterMarkers(mockShelters);
   initUserLocationLayer(initialPos);
 
-  // Connect real-time WebSocket & fetch live persistent incidents
+  // Connect real-time WebSocket
   websocketClient.connect();
-  fetch('/api/v1/incidents')
+
+  // Load system mode configuration and populate live vs simulated assets
+  fetch('/api/v1/system/config')
     .then(r => r.json())
-    .then(data => {
-      if (data && data.incidents) {
-        data.incidents.forEach(inc => {
-          if (!mockIncidents.find(i => i.id === inc.id)) {
-            mockIncidents.push({
-              id: inc.id,
-              title: inc.title,
-              desc: inc.desc,
-              lat: inc.lat,
-              lng: inc.lng,
-              prio: inc.priority,
-              prioType: inc.prio_type || 'red',
-              meshHop: inc.mesh_hop || 'BLE Hop #1',
-              time: inc.time || 'Just now'
+    .then(config => {
+      isRealMode = config.data_mode === 'real';
+
+      // Update flood engine footer badge
+      const surgeTitle = document.getElementById('lbl-surge-title');
+      const surgeStatus = document.getElementById('lbl-surge-status');
+      if (surgeTitle && surgeStatus) {
+        if (isRealMode) {
+          surgeTitle.innerHTML = '<span class="material-symbols-outlined text-sm text-emerald-400">satellite_alt</span> Live Open-Meteo Radar Grid (20.30°N, 85.82°E)';
+          surgeTitle.className = 'text-xs font-bold uppercase text-emerald-400 flex items-center gap-1';
+          surgeStatus.className = 'px-2 py-0.5 bg-emerald-600 text-white font-mono text-[10px] font-bold uppercase rounded flex items-center gap-1';
+          surgeStatus.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-white animate-pulse"></span> LIVE SATELLITE';
+        } else {
+          surgeTitle.innerHTML = '<span class="material-symbols-outlined text-sm text-purple-400">water</span> Synthetic Flood Surge Engine';
+          surgeTitle.className = 'text-xs font-bold uppercase text-purple-400 flex items-center gap-1';
+          surgeStatus.className = 'px-2 py-0.5 bg-purple-600 text-white font-mono text-[10px] font-bold uppercase rounded flex items-center gap-1';
+          surgeStatus.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-white"></span> SIMULATION';
+        }
+      }
+
+      // Fetch Incidents
+      fetch('/api/v1/incidents')
+        .then(r => r.json())
+        .then(data => {
+          if (isRealMode) {
+            mockIncidents.length = 0; // Clear baseline mock incidents in real mode
+          }
+          if (data && data.incidents && data.incidents.length > 0) {
+            mockIncidents.length = 0;
+            data.incidents.forEach(inc => {
+              mockIncidents.push({
+                id: inc.id,
+                title: inc.title,
+                desc: inc.desc,
+                lat: inc.lat,
+                lng: inc.lng,
+                prio: inc.priority,
+                prioType: inc.prio_type || 'red',
+                meshHop: inc.mesh_hop || 'BLE Hop #1',
+                time: inc.time || 'Just now'
+              });
             });
           }
-        });
-        plotIncidentMarkers(mockIncidents);
-        renderSidebarTab('incidents');
-      }
+          plotIncidentMarkers(mockIncidents);
+          renderSidebarTab('incidents');
+        })
+        .catch(() => {});
+
+      // Fetch live operational hospitals from persistent database
+      fetch('/api/v1/hospitals')
+        .then(r => r.json())
+        .then(data => {
+          if (data && Array.isArray(data.hospitals) && data.hospitals.length > 0) {
+            mockHospitals.length = 0;
+            data.hospitals.forEach(h => mockHospitals.push(h));
+            plotHospitalMarkers(mockHospitals);
+            const hospBtn = document.getElementById('tab-left-hospitals');
+            if (hospBtn && hospBtn.classList.contains('bg-black')) {
+              renderSidebarTab('hospitals');
+            }
+          }
+        })
+        .catch(() => {});
+
+      // Fetch live rescue fleet from persistent database
+      fetch('/api/v1/fleet')
+        .then(r => r.json())
+        .then(data => {
+          if (isRealMode) {
+            mockUtilityFleet.length = 0;
+          }
+          if (data && Array.isArray(data.fleet) && data.fleet.length > 0) {
+            mockUtilityFleet.length = 0;
+            data.fleet.forEach(f => mockUtilityFleet.push(f));
+          }
+          plotFleetMarkers(mockUtilityFleet);
+          const fleetBtn = document.getElementById('tab-left-fleet');
+          if (fleetBtn && fleetBtn.classList.contains('bg-black')) {
+            renderSidebarTab('fleet');
+          }
+        })
+        .catch(() => {});
     })
     .catch(() => {});
-
-  // Fetch live operational hospitals from persistent database
-  fetch('/api/v1/hospitals')
-    .then(r => r.json())
-    .then(data => {
-      if (data && Array.isArray(data.hospitals) && data.hospitals.length > 0) {
-        mockHospitals.length = 0;
-        data.hospitals.forEach(h => mockHospitals.push(h));
-        plotHospitalMarkers(mockHospitals);
-      }
-    })
-    .catch(() => {});
-
-  // Fetch live rescue fleet from persistent database
-  fetch('/api/v1/fleet')
-    .then(r => r.json())
-    .then(data => {
-      if (data && Array.isArray(data.fleet) && data.fleet.length > 0) {
-        mockUtilityFleet.length = 0;
-        data.fleet.forEach(f => mockUtilityFleet.push(f));
-        plotFleetMarkers(mockUtilityFleet);
-      }
-    })
     .catch(() => {});
 
   // Real-time dispatch listener
@@ -1014,7 +1071,33 @@ function renderSidebarTab(tabName) {
   if (!container) return;
 
   if (tabName === 'incidents') {
-    container.innerHTML = mockIncidents.map(inc => `
+    const headerHtml = isRealMode
+      ? `<div class="px-4 py-2 bg-emerald-50 border-b border-emerald-200 text-[11px] font-mono font-bold text-emerald-800 flex items-center justify-between">
+           <span class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span> LIVE FIELD INCIDENTS (${mockIncidents.length})</span>
+           <span class="text-[10px] text-emerald-600 font-bold">aegis_real.db</span>
+         </div>`
+      : `<div class="px-4 py-2 bg-purple-50 border-b border-purple-200 text-[11px] font-mono font-bold text-purple-800 flex items-center justify-between">
+           <span class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-purple-500"></span> SIMULATED SCENARIOS (${mockIncidents.length})</span>
+           <span class="text-[10px] text-purple-600 font-bold">aegis_simulated.db</span>
+         </div>`;
+
+    if (mockIncidents.length === 0) {
+      container.innerHTML = headerHtml + `
+        <div class="p-6 text-center text-slate-500 font-mono text-xs flex flex-col items-center justify-center h-64 gap-2">
+          <div class="w-12 h-12 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center mb-1">
+            <span class="material-symbols-outlined text-2xl animate-pulse">radar</span>
+          </div>
+          <strong class="text-sm font-bold text-slate-800 uppercase tracking-wider">Awaiting Field Beacons</strong>
+          <p class="text-xs text-slate-500 max-w-[240px]">Real database (<code class="bg-slate-100 px-1 py-0.5 rounded text-emerald-700 font-bold">aegis_real.db</code>) is active and ready.</p>
+          <button onclick="document.getElementById('sos-modal').classList.remove('hidden')" class="mt-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs py-1.5 px-3 rounded shadow cursor-pointer flex items-center gap-1">
+            <span class="material-symbols-outlined text-xs">add_alert</span> Broadcast Live SOS
+          </button>
+        </div>
+      `;
+      return;
+    }
+
+    container.innerHTML = headerHtml + mockIncidents.map(inc => `
       <div class="p-4 border-b border-outline-variant hover:bg-surface transition-colors cursor-pointer group inc-card-item" onclick="window.panToCoordinates(${parseFloat(inc.lat) || 20.2961}, ${parseFloat(inc.lng) || 85.8245})">
         <div class="flex justify-between items-start mb-2">
           <span class="bg-primary text-on-primary text-xs font-bold px-2 py-0.5">${escapeHtml(inc.prio || 'Priority 1')}</span>
@@ -1026,26 +1109,60 @@ function renderSidebarTab(tabName) {
       </div>
     `).join('');
   } else if (tabName === 'hospitals') {
-    container.innerHTML = mockHospitals.map(h => `
+    const headerHtml = isRealMode
+      ? `<div class="px-4 py-2 bg-emerald-50 border-b border-emerald-200 text-[11px] font-mono font-bold text-emerald-800 flex items-center justify-between">
+           <span>🏥 REAL HEALTHCARE FACILITIES (${mockHospitals.length})</span>
+           <span class="text-[10px] text-emerald-600 font-bold">OPENSTREETMAP OVERPASS</span>
+         </div>`
+      : `<div class="px-4 py-2 bg-purple-50 border-b border-purple-200 text-[11px] font-mono font-bold text-purple-800 flex items-center justify-between">
+           <span>🏥 MOCK RELIEF CENTERS (${mockHospitals.length})</span>
+           <span class="text-[10px] text-purple-600 font-bold">BASELINE SCENARIO</span>
+         </div>`;
+
+    container.innerHTML = headerHtml + mockHospitals.map(h => `
       <div class="p-4 border-b border-outline-variant hover:bg-surface transition-colors cursor-pointer" onclick="window.panToCoordinates(${h.lat}, ${h.lng})">
         <div class="flex justify-between items-start mb-1">
-          <strong class="text-sm text-primary">${h.name}</strong>
+          <strong class="text-sm text-primary">${escapeHtml(h.name)}</strong>
           <span class="text-xs font-bold px-2 py-0.5" style="background:${h.color}; color:#fff;">${h.pct}% OCCUPIED</span>
         </div>
-        <div class="w-full bg-slate-200 h-2 rounded my-2 overflow-hidden">
+        <div class="text-xs text-slate-500 mb-1 font-mono">Capacity: ${h.occupied}/${h.total} beds (${h.free} available)</div>
+        <div class="w-full bg-slate-200 h-2 rounded my-1 overflow-hidden">
           <div class="h-full" style="width:${h.pct}%; background:${h.color};"></div>
         </div>
       </div>
     `).join('');
   } else if (tabName === 'fleet') {
-    container.innerHTML = mockUtilityFleet.map(f => `
+    const headerHtml = isRealMode
+      ? `<div class="px-4 py-2 bg-emerald-50 border-b border-emerald-200 text-[11px] font-mono font-bold text-emerald-800 flex items-center justify-between">
+           <span>🛥️ REGISTERED RESCUE ASSETS (${mockUtilityFleet.length})</span>
+           <span class="text-[10px] text-emerald-600 font-bold">LIVE TELEMETRY</span>
+         </div>`
+      : `<div class="px-4 py-2 bg-purple-50 border-b border-purple-200 text-[11px] font-mono font-bold text-purple-800 flex items-center justify-between">
+           <span>🛥️ MOCK RESCUE ASSETS (${mockUtilityFleet.length})</span>
+           <span class="text-[10px] text-purple-600 font-bold">BASELINE SCENARIO</span>
+         </div>`;
+
+    if (mockUtilityFleet.length === 0) {
+      container.innerHTML = headerHtml + `
+        <div class="p-6 text-center text-slate-500 font-mono text-xs flex flex-col items-center justify-center h-48 gap-2">
+          <div class="w-10 h-10 rounded-full bg-slate-100 text-slate-500 flex items-center justify-center">
+            <span class="material-symbols-outlined text-xl">directions_boat</span>
+          </div>
+          <strong class="text-xs font-bold text-slate-700 uppercase">No Active Fleet Dispatches</strong>
+          <p class="text-[11px] text-slate-400">Rescue units in aegis_real.db will appear here when assigned.</p>
+        </div>
+      `;
+      return;
+    }
+
+    container.innerHTML = headerHtml + mockUtilityFleet.map(f => `
       <div class="p-4 border-b border-outline-variant hover:bg-surface transition-colors flex gap-3 items-center cursor-pointer" onclick="window.panToCoordinates(${f.lat}, ${f.lng})">
         <div class="w-10 h-10 rounded-full flex items-center justify-center text-white shrink-0" style="background:${f.color};">
-          <span class="material-symbols-outlined">${f.icon}</span>
+          <span class="material-symbols-outlined">${f.icon || 'directions_boat'}</span>
         </div>
         <div class="flex-1">
-          <strong class="text-sm text-primary">${f.name}</strong>
-          <div class="text-xs text-on-surface-variant">${f.type} &bull; ${f.crew}</div>
+          <strong class="text-sm text-primary">${escapeHtml(f.name)}</strong>
+          <div class="text-xs text-on-surface-variant">${escapeHtml(f.type)} &bull; ${escapeHtml(f.crew || f.status || 'Active')}</div>
         </div>
       </div>
     `).join('');

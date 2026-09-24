@@ -35,19 +35,37 @@ from app.services.auth_engine import auth_engine_service, ROLES
 from app.services.voice_engine import voice_engine_service
 from app.core.websocket_manager import ws_manager
 
+from app.providers import get_data_provider, get_data_mode
+
 router = APIRouter(prefix="/api/v1", tags=["AapdaSetu Dispatch"])
 
 # --------------------------------------------------------------------------
-# 1. System Health & Telemetry
+# 1. System Health, Configuration & Telemetry
 # --------------------------------------------------------------------------
-@router.get("/system/health")
-def get_system_health(db: Session = Depends(get_db)):
-    incident_count = len(mesh_engine_service.get_incidents(db))
+@router.get("/system/config")
+def get_system_config():
+    provider = get_data_provider()
     return {
         "status": "ONLINE",
-        "service": "AapdaSetu ASGI Production Engine v4.0",
+        "data_mode": get_data_mode(),
+        "mode_label": provider.mode_label,
+        "is_simulated": provider.is_simulated,
+        "version": "4.1.0"
+    }
+
+@router.get("/system/health")
+def get_system_health(db: Session = Depends(get_db)):
+    provider = get_data_provider()
+    incident_count = len(provider.get_incidents(db))
+    db_name = "aegis_real.db" if get_data_mode() == "real" else "aegis_simulated.db"
+    return {
+        "status": "ONLINE",
+        "service": f"AapdaSetu ASGI Production Engine v4.1 ({provider.mode_label})",
+        "data_mode": get_data_mode(),
+        "mode_label": provider.mode_label,
+        "is_simulated": provider.is_simulated,
         "active_incidents": incident_count,
-        "database": "SQLAlchemy SQLite Operational (aegis.db)",
+        "database": f"SQLAlchemy SQLite Operational ({db_name})",
         "mesh_protocol": "BLE Mesh 5.3 + Wi-Fi Direct (AES-256-GCM Authenticated)",
         "gateway_latency_ms": 4.8
     }
@@ -57,9 +75,11 @@ def get_system_health(db: Session = Depends(get_db)):
 # --------------------------------------------------------------------------
 @router.get("/weather/live")
 def get_live_weather(lat: float = 20.2961, lng: float = 85.8245):
+    provider = get_data_provider()
     return {
         "status": "SUCCESS",
-        "telemetry": weather_engine_service.get_live_weather_telemetry(lat, lng)
+        "data_mode": get_data_mode(),
+        "telemetry": provider.get_weather_telemetry(lat, lng)
     }
 
 # --------------------------------------------------------------------------
@@ -67,9 +87,11 @@ def get_live_weather(lat: float = 20.2961, lng: float = 85.8245):
 # --------------------------------------------------------------------------
 @router.get("/incidents", response_model=Dict[str, Any])
 def list_incidents(triage: str = "all", db: Session = Depends(get_db)):
-    items = mesh_engine_service.get_incidents(db, triage_filter=triage)
+    provider = get_data_provider()
+    items = provider.get_incidents(db, triage_filter=triage)
     return {
         "status": "SUCCESS",
+        "data_mode": get_data_mode(),
         "count": len(items),
         "incidents": items
     }
@@ -99,22 +121,26 @@ async def ingest_distress_incident(payload: IncidentCreate, db: Session = Depend
 # --------------------------------------------------------------------------
 @router.get("/hospitals")
 def list_hospitals(db: Session = Depends(get_db)):
-    hospitals = mesh_engine_service.get_hospitals(db)
-    return {"status": "SUCCESS", "count": len(hospitals), "hospitals": hospitals}
+    provider = get_data_provider()
+    hospitals = provider.get_hospitals(db)
+    return {"status": "SUCCESS", "data_mode": get_data_mode(), "count": len(hospitals), "hospitals": hospitals}
 
 @router.get("/fleet")
 def list_fleet(db: Session = Depends(get_db)):
-    fleet = mesh_engine_service.get_fleet(db)
-    return {"status": "SUCCESS", "count": len(fleet), "fleet": fleet}
+    provider = get_data_provider()
+    fleet = provider.get_fleet(db)
+    return {"status": "SUCCESS", "data_mode": get_data_mode(), "count": len(fleet), "fleet": fleet}
 
 @router.get("/roads")
 def list_roads(db: Session = Depends(get_db)):
-    roads = mesh_engine_service.get_road_hazards(db)
-    return {"status": "SUCCESS", "count": len(roads), "roads": roads}
+    provider = get_data_provider()
+    roads = provider.get_road_hazards(db)
+    return {"status": "SUCCESS", "data_mode": get_data_mode(), "count": len(roads), "roads": roads}
 
 @router.get("/mesh/topology")
 def get_mesh_topology(db: Session = Depends(get_db)):
-    return mesh_engine_service.get_mesh_topology(db)
+    provider = get_data_provider()
+    return provider.get_mesh_topology(db)
 
 @router.post("/mesh/radio/raw")
 async def ingest_raw_radio_frame(payload: Dict[str, Any], db: Session = Depends(get_db)):
@@ -202,16 +228,18 @@ def analyze_vision_feed(payload: VisionDetectRequest):
 @router.get("/routing/network")
 def get_routing_network(flood_depth_m: float = 1.5):
     """Returns the topological road network with live edge clearance and flood status."""
-    return routing_solver_service.get_road_network(current_flood_depth_m=flood_depth_m)
+    provider = get_data_provider()
+    return provider.get_road_network(current_flood_depth_m=flood_depth_m)
 
 @router.post("/routing/calculate")
 def calculate_evacuation_corridor(payload: Dict[str, Any]):
     """Calculates optimal Dijkstra path avoiding submerged road segments."""
+    provider = get_data_provider()
     origin = payload.get("origin_node", "N_SECTOR_B4")
     dest = payload.get("destination_node", "N_APEX_TRAUMA")
     threshold = float(payload.get("flood_threshold", 0.8))
     vtype = str(payload.get("vehicle_type", "AMBULANCE"))
-    return routing_solver_service.calculate_route(
+    return provider.calculate_route(
         origin_node=origin,
         destination_node=dest,
         flood_threshold=threshold,
@@ -219,8 +247,10 @@ def calculate_evacuation_corridor(payload: Dict[str, Any]):
     )
 
 @router.post("/routing/solver")
-def solve_evacuation_routing(payload: RoutingSolverRequest):
-    return routing_solver_service.solve_multi_objective(
+def solve_evacuation_routing(payload: RoutingSolverRequest, db: Session = Depends(get_db)):
+    provider = get_data_provider()
+    return provider.solve_routing(
+        db=db,
         origin_lat=payload.origin_lat,
         origin_lng=payload.origin_lng,
         flood_depth_m=payload.flood_depth_m,
@@ -247,9 +277,11 @@ ACTIVE_CAP_ALERTS: List[Dict[str, Any]] = [
 ]
 
 @router.get("/alerts/cap.xml")
-def get_cap_alert_xml():
+def get_cap_alert_xml(db: Session = Depends(get_db)):
     """Returns strict OASIS CAP v1.2 XML feed for integration with NDMA SACHET or FEMA IPAWS."""
-    latest = ACTIVE_CAP_ALERTS[0] if ACTIVE_CAP_ALERTS else {}
+    provider = get_data_provider()
+    alerts = ACTIVE_CAP_ALERTS or provider.get_active_alerts(db)
+    latest = alerts[0] if alerts else {}
     xml_str = cap_engine_service.build_cap_xml(
         identifier=latest.get("identifier"),
         event=latest.get("event", "Flash Flood Warning"),
@@ -264,11 +296,15 @@ def get_cap_alert_xml():
     return Response(content=xml_str, media_type="application/xml")
 
 @router.get("/alerts")
-def get_active_alerts():
+def get_active_alerts(db: Session = Depends(get_db)):
+    provider = get_data_provider()
+    provider_alerts = provider.get_active_alerts(db)
+    combined = ACTIVE_CAP_ALERTS + [a for a in provider_alerts if a not in ACTIVE_CAP_ALERTS]
     return {
         "status": "SUCCESS",
-        "count": len(ACTIVE_CAP_ALERTS),
-        "alerts": ACTIVE_CAP_ALERTS
+        "data_mode": get_data_mode(),
+        "count": len(combined),
+        "alerts": combined
     }
 
 @router.post("/alerts/broadcast")
@@ -429,16 +465,30 @@ def handle_api_request(path: str, method: str = "GET", payload: Optional[Dict[st
     """
     payload = payload or {}
     db = SessionLocal()
+    provider = get_data_provider()
     try:
         # Seed initial records if first run
-        mesh_engine_service.seed_initial_data_if_empty(db)
+        provider.initialize_database(db)
 
-        if path == "/api/v1/system/health":
+        if path == "/api/v1/system/config" and method == "GET":
             return {
                 "status": "ONLINE",
-                "service": "AapdaSetu ASGI Production Engine v4.0",
-                "database": "SQLite Persistent (aegis.db)",
-                "active_incidents": len(mesh_engine_service.get_incidents(db)),
+                "data_mode": get_data_mode(),
+                "mode_label": provider.mode_label,
+                "is_simulated": provider.is_simulated,
+                "version": "4.1.0"
+            }
+
+        elif path == "/api/v1/system/health":
+            db_name = "aegis_real.db" if get_data_mode() == "real" else "aegis_simulated.db"
+            return {
+                "status": "ONLINE",
+                "service": f"AapdaSetu ASGI Production Engine v4.1 ({provider.mode_label})",
+                "data_mode": get_data_mode(),
+                "mode_label": provider.mode_label,
+                "is_simulated": provider.is_simulated,
+                "database": f"SQLite Persistent ({db_name})",
+                "active_incidents": len(provider.get_incidents(db)),
                 "gateway_latency_ms": 4.8
             }
 
@@ -447,25 +497,26 @@ def handle_api_request(path: str, method: str = "GET", payload: Optional[Dict[st
             lng = float(payload.get("lng", 85.8245))
             return {
                 "status": "SUCCESS",
-                "telemetry": weather_engine_service.get_live_weather_telemetry(lat, lng)
+                "data_mode": get_data_mode(),
+                "telemetry": provider.get_weather_telemetry(lat, lng)
             }
 
         elif path == "/api/v1/incidents" and method == "GET":
             triage = payload.get("triage", "all")
-            items = mesh_engine_service.get_incidents(db, triage)
-            return {"status": "SUCCESS", "count": len(items), "incidents": items}
+            items = provider.get_incidents(db, triage)
+            return {"status": "SUCCESS", "data_mode": get_data_mode(), "count": len(items), "incidents": items}
 
         elif path == "/api/v1/hospitals" and method == "GET":
-            items = mesh_engine_service.get_hospitals(db)
-            return {"status": "SUCCESS", "count": len(items), "hospitals": items}
+            items = provider.get_hospitals(db)
+            return {"status": "SUCCESS", "data_mode": get_data_mode(), "count": len(items), "hospitals": items}
 
         elif path == "/api/v1/fleet" and method == "GET":
-            items = mesh_engine_service.get_fleet(db)
-            return {"status": "SUCCESS", "count": len(items), "fleet": items}
+            items = provider.get_fleet(db)
+            return {"status": "SUCCESS", "data_mode": get_data_mode(), "count": len(items), "fleet": items}
 
         elif path == "/api/v1/roads" and method == "GET":
-            items = mesh_engine_service.get_road_hazards(db)
-            return {"status": "SUCCESS", "roads": items}
+            items = provider.get_road_hazards(db)
+            return {"status": "SUCCESS", "data_mode": get_data_mode(), "roads": items}
 
         elif path == "/api/v1/incidents/ingest" and method == "POST":
             return mesh_engine_service.ingest_distress_packet(db, payload)
@@ -482,24 +533,25 @@ def handle_api_request(path: str, method: str = "GET", payload: Optional[Dict[st
             depth = float(payload.get("flood_depth_m", 1.8))
             bed_prio = float(payload.get("bed_priority_weight", 0.75))
             storm = float(payload.get("storm_risk_factor", 3.0))
-            return routing_solver_service.solve_multi_objective(origin_lat, origin_lng, depth, bed_prio, storm)
+            return provider.solve_routing(db, origin_lat, origin_lng, depth, bed_prio, storm)
 
         elif path == "/api/v1/routing/network" and method == "GET":
             depth = float(payload.get("flood_depth_m", 1.5))
-            return routing_solver_service.get_road_network(current_flood_depth_m=depth)
+            return provider.get_road_network(current_flood_depth_m=depth)
 
         elif path == "/api/v1/routing/calculate" and method == "POST":
             origin = payload.get("origin_node", "N_SECTOR_B4")
             dest = payload.get("destination_node", "N_APEX_TRAUMA")
             threshold = float(payload.get("flood_threshold", 0.8))
             vtype = str(payload.get("vehicle_type", "AMBULANCE"))
-            return routing_solver_service.calculate_route(origin, dest, threshold, vtype)
+            return provider.calculate_route(origin, dest, threshold, vtype)
 
         elif path == "/api/v1/mesh/topology" and method == "GET":
-            return mesh_engine_service.get_mesh_topology(db)
+            return provider.get_mesh_topology(db)
 
         elif path == "/api/v1/alerts/cap.xml" and method == "GET":
-            latest = ACTIVE_CAP_ALERTS[0] if ACTIVE_CAP_ALERTS else {}
+            alerts = ACTIVE_CAP_ALERTS or provider.get_active_alerts(db)
+            latest = alerts[0] if alerts else {}
             xml_str = cap_engine_service.build_cap_xml(
                 identifier=latest.get("identifier"),
                 event=latest.get("event", "Flash Flood Warning"),
@@ -514,10 +566,13 @@ def handle_api_request(path: str, method: str = "GET", payload: Optional[Dict[st
             return {"status": "SUCCESS", "content_type": "application/xml", "xml": xml_str}
 
         elif path == "/api/v1/alerts" and method == "GET":
+            provider_alerts = provider.get_active_alerts(db)
+            combined = ACTIVE_CAP_ALERTS + [a for a in provider_alerts if a not in ACTIVE_CAP_ALERTS]
             return {
                 "status": "SUCCESS",
-                "count": len(ACTIVE_CAP_ALERTS),
-                "alerts": ACTIVE_CAP_ALERTS
+                "data_mode": get_data_mode(),
+                "count": len(combined),
+                "alerts": combined
             }
 
         elif path == "/api/v1/alerts/broadcast" and method == "POST":

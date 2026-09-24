@@ -34,6 +34,23 @@
 </head>
 <body class="h-full w-full bg-slate-950 text-slate-100 font-sans antialiased overflow-hidden flex flex-col justify-between select-none">
   
+  <!-- Dual-Mode Environment High-Visibility Banner Strip -->
+  <div id="instance-mode-banner" class="w-full px-4 sm:px-6 py-2.5 flex items-center justify-between text-xs font-mono font-bold shrink-0 transition-all border-b z-50 bg-slate-900 text-white border-slate-700">
+    <div class="flex items-center gap-3">
+      <span id="banner-mode-pill" class="px-2.5 py-0.5 rounded text-[11px] flex items-center gap-1.5 uppercase font-black tracking-wider shadow-sm bg-slate-700 text-white">
+        <span class="w-2.5 h-2.5 rounded-full bg-slate-400 animate-pulse" id="banner-mode-dot"></span>
+        <span id="banner-mode-title">CONNECTING INSTANCE...</span>
+      </span>
+      <span id="banner-mode-desc" class="hidden md:inline font-sans text-xs font-medium opacity-90">Initializing dual-mode architecture...</span>
+    </div>
+    <div class="flex items-center gap-3">
+      <span id="banner-db-pill" class="hidden lg:inline-block px-2 py-0.5 rounded bg-black/25 text-[10px] font-mono font-bold uppercase tracking-wider"></span>
+      <a id="banner-switch-link" href="#" class="px-3 py-1 rounded text-xs font-bold transition-all flex items-center gap-1 shadow-sm bg-white/10 hover:bg-white/20 text-white">
+        <span id="banner-switch-label">Switch Instance</span> ↗
+      </a>
+    </div>
+  </div>
+
   <!-- DESKTOP PRESENTATION HEADER -->
   <header class="w-full h-16 border-b border-slate-800 bg-slate-900/90 backdrop-blur-md px-6 flex items-center justify-between shrink-0 z-50">
     <div class="flex items-center gap-3">
