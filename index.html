@@ -191,7 +191,24 @@
       </div>
 
       <!-- Trailing Status & Language Switcher Actions -->
-      <div class="flex items-center gap-4 h-full">
+        <!-- Tactical Role Hierarchy Switcher -->
+        <div class="flex items-center gap-1 border border-outline-variant px-2 py-1 bg-surface-container-low" title="Switch Tactical Command Role">
+          <span class="material-symbols-outlined text-primary" style="font-size: 16px;">shield_person</span>
+          <select id="sel-tactical-role" class="bg-transparent text-xs font-bold text-primary outline-none cursor-pointer uppercase">
+            <option value="CITIZEN">Citizen (Lv1)</option>
+            <option value="NDRF_RESPONDER">NDRF Operator (Lv2)</option>
+            <option value="INCIDENT_COMMANDER" selected>Commander (Lv3)</option>
+          </select>
+        </div>
+
+        <!-- Push-to-Talk Voice SOS & CAP Alert Quick Buttons -->
+        <button id="btn-open-voice-sos" class="btn btn-danger hidden md:inline-flex" style="padding: 4px 8px; font-size: 11px;" title="Push-to-Talk Voice Distress Audio SOS">
+          <span class="material-symbols-outlined" style="font-size: 15px;">mic</span> Voice SOS
+        </button>
+        <button id="btn-open-cap-alert" class="btn hidden md:inline-flex" style="padding: 4px 8px; font-size: 11px; background: #0284c7; color: #ffffff; border-color: #0284c7;" title="OASIS CAP v1.2 Government Alert Broadcaster">
+          <span class="material-symbols-outlined" style="font-size: 15px;">campaign</span> CAP Alert
+        </button>
+
         <!-- Language Switcher Button -->
         <div class="flex items-center gap-1 border border-outline-variant px-2 py-1 bg-surface-container-low">
           <span class="material-symbols-outlined text-primary" style="font-size: 18px;">language</span>

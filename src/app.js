@@ -13,13 +13,18 @@ import { locationService } from './services/location-service.js';
 import { cryptoService } from './services/crypto-service.js';
 import { offlineStore } from './services/offline-store.js';
 import { websocketClient } from './services/websocket-service.js';
+import { identityService } from './services/identity-service.js';
+import { openVoiceDistressModal } from './components/voice-distress-modal.js';
+import { openCapAlertModal } from './components/cap-alert-dialog.js';
 
 let currentViewId = 'gis-dashboard';
 
 document.addEventListener('DOMContentLoaded', () => {
   initLanguageSwitcher();
+  initTacticalRoleSwitcher();
   initNavigation();
   initSosModal();
+  initVoiceSosAndCapButtons();
   initFooterLinks();
   initLiveHeaderTelemetry();
 
@@ -29,6 +34,32 @@ document.addEventListener('DOMContentLoaded', () => {
   // Initial View Mount
   mountView(currentViewId);
 });
+
+function initTacticalRoleSwitcher() {
+  const selRole = document.getElementById('sel-tactical-role');
+  if (selRole) {
+    selRole.value = identityService.getRole();
+    selRole.addEventListener('change', async (e) => {
+      await identityService.setRole(e.target.value);
+      const info = identityService.getRoleInfo();
+      showSystemPrompt({
+        title: `Role Switched: ${info.title}`,
+        message: info.desc,
+        details: `ROLE LEVEL: Level ${info.level}\nACTIVE NODE: ${identityService.getNodeId()}\nPERMISSIONS: ${info.title} clearance active`
+      });
+    });
+  }
+}
+
+function initVoiceSosAndCapButtons() {
+  document.getElementById('btn-open-voice-sos')?.addEventListener('click', () => {
+    openVoiceDistressModal();
+  });
+
+  document.getElementById('btn-open-cap-alert')?.addEventListener('click', () => {
+    openCapAlertModal();
+  });
+}
 
 function initLanguageSwitcher() {
   const select = document.getElementById('sel-lang-switch');

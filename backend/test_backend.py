@@ -299,6 +299,134 @@ def test_raw_radio_packet_ingest():
 
     print("  [PASS] Hardware raw radio packet ingested, validated, persisted, and broadcasted to dispatch mesh.")
 
+def test_cap_alerting_engine():
+    print("[12/14] Testing OASIS CAP v1.2 Common Alerting Protocol Engine...")
+    from app.services.cap_engine import cap_engine_service
+
+    # Build XML
+    xml_str = cap_engine_service.build_cap_xml(
+        event="Severe Inundation Surge",
+        urgency="Immediate",
+        severity="Extreme",
+        headline="Mahanadi Basin Embankment Collapse",
+        instruction="Evacuate to Sector 4 Apex Trauma immediately.",
+        circle="20.2961,85.8245,6.5"
+    )
+
+    assert "<alert" in xml_str and "xmlns=\"urn:oasis:names:tc:emergency:cap:1.2\"" in xml_str
+    assert "<event>Severe Inundation Surge</event>" in xml_str
+    assert "<urgency>Immediate</urgency>" in xml_str
+    assert "<severity>Extreme</severity>" in xml_str
+    assert "<circle>20.2961,85.8245,6.5</circle>" in xml_str
+
+    # Parse XML
+    parsed = cap_engine_service.parse_cap_xml(xml_str)
+    assert parsed["event"] == "Severe Inundation Surge"
+    assert parsed["severity"] == "Extreme"
+    assert parsed["cap_version"] == "1.2"
+
+    # REST Endpoint Test
+    res = client.get("/api/v1/alerts/cap.xml")
+    assert res.status_code == 200
+    assert "application/xml" in res.headers.get("content-type", "")
+    assert "<alert" in res.text
+
+    # Broadcast test
+    res_bcast = client.post("/api/v1/alerts/broadcast", json={
+        "event": "Cyclone Storm Surge Alert",
+        "headline": "Category 4 Cyclone Approaching Coast",
+        "instruction": "Seek concrete cyclone shelters immediately",
+        "circle": "20.30,85.83,10.0",
+        "severity": "Extreme",
+        "urgency": "Immediate"
+    })
+    assert res_bcast.status_code == 200
+    bcast_data = res_bcast.json()
+    assert bcast_data["status"] == "BROADCASTED"
+    assert "cap_xml" in bcast_data
+
+    print("  [PASS] OASIS CAP v1.2 (ITU-T X.1303) XML serialization, schema parsing, and alert broadcast verified.")
+
+def test_ed25519_and_rbac():
+    print("[13/14] Testing Ed25519 Asymmetric Signatures & Tactical RBAC...")
+    from app.services.auth_engine import auth_engine_service
+
+    # 1. Asymmetric Ed25519 keypair and signing
+    keys = auth_engine_service.generate_ed25519_keypair()
+    assert len(keys["public_key_hex"]) == 64
+    assert len(keys["private_key_hex"]) == 64
+
+    message = b"AEGIS_DISTRESS_NODE_B4_WATER_DEPTH_3M"
+    sig = auth_engine_service.sign_payload(keys["private_key_hex"], message)
+    assert len(sig) == 128
+
+    # Verify signature
+    assert auth_engine_service.verify_ed25519_signature(keys["public_key_hex"], sig, message) is True
+    # Verify tampered message fails
+    assert auth_engine_service.verify_ed25519_signature(keys["public_key_hex"], sig, b"TAMPERED_MESSAGE") is False
+
+    # 2. JWT Role token creation & verification
+    token_citizen = auth_engine_service.create_jwt_token(role="CITIZEN", node_id="NODE-CITIZEN-01")
+    user_cit = auth_engine_service.verify_token(token_citizen, required_role="CITIZEN")
+    assert user_cit["role"] == "CITIZEN"
+
+    token_cmd = auth_engine_service.create_jwt_token(role="INCIDENT_COMMANDER", node_id="NODE-HQ-COMMANDER")
+    user_cmd = auth_engine_service.verify_token(token_cmd, required_role="NDRF_RESPONDER")
+    assert user_cmd["role_level"] >= 2
+
+    # 3. Privilege escalation rejection
+    try:
+        auth_engine_service.verify_token(token_citizen, required_role="INCIDENT_COMMANDER")
+        assert False, "Should have rejected CITIZEN from commander role"
+    except PermissionError as e:
+        assert "Insufficient privileges" in str(e)
+
+    # 4. REST endpoint verification
+    res_auth = client.post("/api/v1/auth/verify_signature", json={
+        "public_key_hex": keys["public_key_hex"],
+        "signature_hex": sig,
+        "message": message.decode()
+    })
+    assert res_auth.status_code == 200
+    assert res_auth.json()["verified"] is True
+
+    print("  [PASS] Ed25519 anti-spoofing cryptographic signatures and 3-tier Tactical RBAC verified.")
+
+def test_voice_distress_triage():
+    print("[14/14] Testing Push-to-Talk Voice Distress & Multilingual Acoustic Keyword Triage...")
+    from app.services.voice_engine import voice_engine_service
+
+    # High-urgency Hindi/English voice distress sample
+    analysis = voice_engine_service.analyze_voice_payload(
+        audio_base64="GkXfo59ChoEBQveBAULygQSt8E6AK4+6sh8BAEm542Zsb2F0LmRpY3RhdGlvbg==",
+        caller_name="Rooftop Survivor 14",
+        transcription_hint="Bachao! 3 children trapped on terrace, water rising fast!"
+    )
+
+    assert analysis["status"] == "ANALYZED"
+    assert analysis["urgency_score"] >= 65
+    assert analysis["triage"] == "CRITICAL"
+    assert analysis["priority"] == "Priority 1"
+    assert any(k["keyword"] == "bachao" for k in analysis["detected_keywords"])
+    assert any(k["keyword"] == "trapped" for k in analysis["detected_keywords"])
+    assert any(k["keyword"] == "water rising" for k in analysis["detected_keywords"])
+
+    # REST Endpoint Test
+    res_voice = client.post("/api/v1/voice/triage", json={
+        "audio_base64": "GkXfo59ChoEBQveBAULygQSt8E6AK4+6sh8BAEm542Zsb2F0LmRpY3RhdGlvbg==",
+        "caller": "Unit 9 Flood Call",
+        "transcription_hint": "Bachao, elderly bujurg trapped, chest pain!",
+        "lat": 20.298,
+        "lng": 85.825
+    })
+    assert res_voice.status_code == 200
+    voice_data = res_voice.json()
+    assert voice_data["status"] == "INGESTED"
+    assert voice_data["incident"]["id"] is not None
+    assert voice_data["analysis"]["urgency_score"] > 60
+
+    print("  [PASS] Multilingual acoustic keyword spotting and automated Priority 1 voice triage verified.")
+
 def run_all():
     print("\n==========================================================================")
     print("AAPDASETU PRODUCTION SYSTEM VERIFICATION TEST SUITE")
@@ -314,8 +442,12 @@ def run_all():
     test_offline_vendor_assets()
     test_lora_binary_codec()
     test_raw_radio_packet_ingest()
-    print("\nALL 11 PRODUCTION SYSTEM TESTS PASSED PERFECTLY!\n")
+    test_cap_alerting_engine()
+    test_ed25519_and_rbac()
+    test_voice_distress_triage()
+    print("\nALL 14 PRODUCTION SYSTEM TESTS PASSED PERFECTLY!\n")
 
 if __name__ == "__main__":
     run_all()
+
 

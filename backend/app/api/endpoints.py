@@ -7,7 +7,8 @@ distress ingestion, live weather stream, Dijkstra route solver, and computer vis
 """
 
 from typing import Dict, Any, List, Optional
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Header
+from fastapi.responses import Response
 from sqlalchemy.orm import Session
 
 from app.db.database import get_db, SessionLocal
@@ -29,6 +30,9 @@ from app.services.routing_engine import routing_solver_service
 from app.services.vision_engine import vision_engine_service
 from app.services.weather_engine import weather_engine_service
 from app.services.lora_codec import lora_codec_service
+from app.services.cap_engine import cap_engine_service
+from app.services.auth_engine import auth_engine_service, ROLES
+from app.services.voice_engine import voice_engine_service
 from app.core.websocket_manager import ws_manager
 
 router = APIRouter(prefix="/api/v1", tags=["AapdaSetu Dispatch"])
@@ -225,7 +229,198 @@ def solve_evacuation_routing(payload: RoutingSolverRequest):
     )
 
 # --------------------------------------------------------------------------
-# 7. Backward-Compatible Dispatch Bridge for server.py / test_backend.py
+# 7. OASIS CAP v1.2 Early-Warning Alerting Engine (NDMA SACHET / FEMA IPAWS)
+# --------------------------------------------------------------------------
+ACTIVE_CAP_ALERTS: List[Dict[str, Any]] = [
+    {
+        "identifier": "IN-OD-CAP-2026-FLOOD-01",
+        "event": "Flash Flood Inundation & Severe Surge Warning",
+        "urgency": "Immediate",
+        "severity": "Severe",
+        "certainty": "Observed",
+        "headline": "URGENT EVACUATION: Rising Mahanadi Catchment Basin Breach",
+        "instruction": "Evacuate low-lying river wards to Sector 4 Apex Trauma Safe Zone via Green Corridor.",
+        "area_desc": "Bhubaneswar & Cuttack Riverfront Lowlands",
+        "circle": "20.2961,85.8245,6.0",
+        "sent": "2026-09-24T12:00:00+00:00"
+    }
+]
+
+@router.get("/alerts/cap.xml")
+def get_cap_alert_xml():
+    """Returns strict OASIS CAP v1.2 XML feed for integration with NDMA SACHET or FEMA IPAWS."""
+    latest = ACTIVE_CAP_ALERTS[0] if ACTIVE_CAP_ALERTS else {}
+    xml_str = cap_engine_service.build_cap_xml(
+        identifier=latest.get("identifier"),
+        event=latest.get("event", "Flash Flood Warning"),
+        urgency=latest.get("urgency", "Immediate"),
+        severity=latest.get("severity", "Severe"),
+        certainty=latest.get("certainty", "Observed"),
+        headline=latest.get("headline", "Disaster Alert"),
+        instruction=latest.get("instruction", "Follow local DDMA guidance."),
+        area_desc=latest.get("area_desc", "Mahanadi Sector B4"),
+        circle=latest.get("circle", "20.2961,85.8245,5.0")
+    )
+    return Response(content=xml_str, media_type="application/xml")
+
+@router.get("/alerts")
+def get_active_alerts():
+    return {
+        "status": "SUCCESS",
+        "count": len(ACTIVE_CAP_ALERTS),
+        "alerts": ACTIVE_CAP_ALERTS
+    }
+
+@router.post("/alerts/broadcast")
+async def broadcast_cap_alert(payload: Dict[str, Any]):
+    """Generates and broadcasts a new CAP v1.2 XML emergency alert across the mesh and WebSocket stream."""
+    event = payload.get("event", "Emergency Evacuation Order")
+    headline = payload.get("headline", "URGENT DISASTER ADVISORY")
+    instruction = payload.get("instruction", "Proceed to nearest safe elevation shelter.")
+    area_desc = payload.get("area_desc", "District Hazard Polygon")
+    circle = payload.get("circle", "20.2961,85.8245,5.0")
+    severity = payload.get("severity", "Severe")
+    urgency = payload.get("urgency", "Immediate")
+
+    xml_str = cap_engine_service.build_cap_xml(
+        event=event,
+        urgency=urgency,
+        severity=severity,
+        headline=headline,
+        instruction=instruction,
+        area_desc=area_desc,
+        circle=circle
+    )
+    parsed = cap_engine_service.parse_cap_xml(xml_str)
+    ACTIVE_CAP_ALERTS.insert(0, parsed)
+    if len(ACTIVE_CAP_ALERTS) > 20:
+        ACTIVE_CAP_ALERTS.pop()
+
+    await ws_manager.broadcast({
+        "type": "NEW_CAP_ALERT",
+        "alert": parsed,
+        "cap_xml": xml_str
+    })
+
+    return {
+        "status": "BROADCASTED",
+        "alert": parsed,
+        "cap_xml": xml_str
+    }
+
+# --------------------------------------------------------------------------
+# 8. Cryptographic Ed25519 Anti-Spoofing & Tactical RBAC
+# --------------------------------------------------------------------------
+@router.post("/auth/token")
+def issue_tactical_token(payload: Dict[str, Any]):
+    role = payload.get("role", "CITIZEN").upper()
+    node_id = payload.get("node_id", "FIELD-NODE-01")
+    token = auth_engine_service.create_jwt_token(role=role, node_id=node_id)
+    return {
+        "status": "ISSUED",
+        "token": token,
+        "role": role,
+        "role_info": ROLES.get(role, ROLES["CITIZEN"])
+    }
+
+@router.post("/auth/verify_signature")
+def verify_beacon_signature(payload: Dict[str, Any]):
+    pub_hex = payload.get("public_key_hex", "")
+    sig_hex = payload.get("signature_hex", "")
+    msg_str = payload.get("message", "")
+    is_valid = auth_engine_service.verify_ed25519_signature(pub_hex, sig_hex, msg_str.encode("utf-8"))
+    return {
+        "verified": is_valid,
+        "algorithm": "Ed25519",
+        "status": "AUTHENTIC" if is_valid else "SPOOF_DETECTED_OR_CORRUPT"
+    }
+
+@router.post("/incidents/claim")
+async def claim_incident(payload: Dict[str, Any], authorization: Optional[str] = Header(None), db: Session = Depends(get_db)):
+    """Allows NDRF_RESPONDER or INCIDENT_COMMANDER to claim an incident and dispatch fleet."""
+    token = (authorization or "").replace("Bearer ", "")
+    user_info = None
+    if token:
+        try:
+            user_info = auth_engine_service.verify_token(token, required_role="NDRF_RESPONDER")
+        except (ValueError, PermissionError) as e:
+            raise HTTPException(status_code=403, detail=str(e))
+
+    inc_id = payload.get("incident_id")
+    responder_id = payload.get("responder_id", user_info["sub"] if user_info else "NDRF-ALPHA-1")
+
+    incident = db.query(models.Incident).filter(models.Incident.id == inc_id).first()
+    if not incident:
+        raise HTTPException(status_code=404, detail="Incident not found")
+
+    incident.triage = "DISPATCHED"
+    incident.desc = f"{incident.desc} [CLAIMED by {responder_id}]"
+    db.commit()
+
+    await ws_manager.broadcast({
+        "type": "INCIDENT_STATUS_UPDATE",
+        "incident_id": inc_id,
+        "status": "DISPATCHED",
+        "responder_id": responder_id
+    })
+
+    return {
+        "status": "CLAIMED",
+        "incident_id": inc_id,
+        "responder_id": responder_id,
+        "role": user_info.get("role") if user_info else "NDRF_RESPONDER"
+    }
+
+# --------------------------------------------------------------------------
+# 9. Push-to-Talk Voice Distress Acoustic Triage Engine
+# --------------------------------------------------------------------------
+@router.post("/voice/triage")
+async def analyze_voice_distress(payload: Dict[str, Any], db: Session = Depends(get_db)):
+    """Analyzes push-to-talk voice recording, spots multilingual disaster keywords, computes urgency score, and ingests incident."""
+    import time
+    audio_b64 = payload.get("audio_base64", "")
+    caller = payload.get("caller", "Voice SOS Citizen")
+    hint = payload.get("transcription_hint", "")
+    lat = float(payload.get("lat", 20.2985))
+    lng = float(payload.get("lng", 85.8260))
+
+    analysis = voice_engine_service.analyze_voice_payload(audio_b64, caller, hint)
+
+    inc_id = f"VOICE-{analysis['urgency_score']}-{int(time.time()) % 10000}"
+    new_inc = models.Incident(
+        id=inc_id,
+        title=f"Voice SOS: {caller} ({analysis['triage']})",
+        priority=analysis["priority"],
+        prio_type=analysis["prio_type"],
+        time="Just now",
+        desc=f"Speech Transcript: \"{analysis['transcript']}\" (Urgency: {analysis['urgency_score']}/100, Action: {analysis['recommended_action']})",
+        tags_json=json.dumps(["Voice Memo", f"Score: {analysis['urgency_score']}", f"Keywords: {analysis['keyword_count']}"]),
+        lat=lat,
+        lng=lng,
+        triage=analysis["triage"],
+        mesh_hop="Audio Mesh",
+        battery="89%",
+        caller_name=caller
+    )
+
+    db.add(new_inc)
+    db.commit()
+
+    await ws_manager.broadcast({
+        "type": "NEW_DISTRESS_INCIDENT",
+        "incident": new_inc.to_dict(),
+        "source": "VOICE_PTT_TRIAGE",
+        "analysis": analysis
+    })
+
+    return {
+        "status": "INGESTED",
+        "incident": new_inc.to_dict(),
+        "analysis": analysis
+    }
+
+# --------------------------------------------------------------------------
+# 10. Backward-Compatible Dispatch Bridge for server.py / test_backend.py
 # --------------------------------------------------------------------------
 def handle_api_request(path: str, method: str = "GET", payload: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
     """

@@ -9,6 +9,7 @@ import { floodPredictionService } from '../services/flood-prediction.js';
 import { weatherIngressService } from '../services/weather-ingress.js';
 import { locationService, DEMO_USER_LOCATION, mockShelters } from '../services/location-service.js';
 import { websocketClient } from '../services/websocket-service.js';
+import { createTacticalGridTile, createAirGappedTileLayer, OFFLINE_HAZARD_GEOJSON } from '../services/offline-map-cache.js';
 
 export function escapeHtml(str) {
   if (str === null || str === undefined) return '';
@@ -151,6 +152,9 @@ export function renderGisDashboard(container) {
             </label>
             <label class="flex items-center gap-1 cursor-pointer">
               <input type="checkbox" id="chk-fleet-layer" checked class="accent-black"> 🛥️ Fleet
+            </label>
+            <label class="flex items-center gap-1 cursor-pointer text-cyan-600 font-bold" title="100% Offline Procedural Canvas Military Grid">
+              <input type="checkbox" id="chk-airgapped-map" class="accent-cyan-600"> 🛰️ Air-Gapped Grid
             </label>
           </div>
 
@@ -333,10 +337,54 @@ function initLeafletMap() {
     zoomControl: false
   });
 
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  const osmTileLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     attribution: '&copy; OpenStreetMap',
     maxZoom: 19
-  }).addTo(map);
+  });
+
+  const TacticalGridLayer = createAirGappedTileLayer(L);
+  const airGappedTileLayer = TacticalGridLayer ? new TacticalGridLayer({ maxZoom: 19 }) : null;
+
+  osmTileLayer.addTo(map);
+
+  // Automatic tile error fallback: renders canvas military grid tile so no tile is ever broken
+  osmTileLayer.on('tileerror', function(error, tile) {
+    try {
+      const coords = error.coords;
+      const canvasTile = createTacticalGridTile(coords);
+      error.tile.src = canvasTile.toDataURL();
+    } catch (e) {}
+  });
+
+  // Offline Vector Hazard GeoJSON Layer (Mahanadi River Basin & Evacuation Sanctuary)
+  if (L.geoJSON && OFFLINE_HAZARD_GEOJSON) {
+    L.geoJSON(OFFLINE_HAZARD_GEOJSON, {
+      style: function(feature) {
+        return {
+          color: feature.properties.color || '#ef4444',
+          weight: 2,
+          opacity: 0.8,
+          fillColor: feature.properties.color || '#ef4444',
+          fillOpacity: 0.15,
+          dashArray: '4, 4'
+        };
+      },
+      onEachFeature: function(feature, layer) {
+        layer.bindTooltip(`<strong>${escapeHtml(feature.properties.name)}</strong><br>Status: ${escapeHtml(feature.properties.hazard)}`, { sticky: true });
+      }
+    }).addTo(map);
+  }
+
+  // Handle Air-Gapped Grid Toggle checkbox
+  document.getElementById('chk-airgapped-map')?.addEventListener('change', (e) => {
+    if (e.target.checked) {
+      if (map.hasLayer(osmTileLayer)) map.removeLayer(osmTileLayer);
+      if (airGappedTileLayer && !map.hasLayer(airGappedTileLayer)) airGappedTileLayer.addTo(map);
+    } else {
+      if (airGappedTileLayer && map.hasLayer(airGappedTileLayer)) map.removeLayer(airGappedTileLayer);
+      if (!map.hasLayer(osmTileLayer)) osmTileLayer.addTo(map);
+    }
+  });
 
   updateFloodPolygon();
   renderRoadPolylines();
