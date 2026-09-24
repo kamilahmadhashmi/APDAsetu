@@ -142,19 +142,30 @@ function initMobileSidebar() {
 
   const closeSidebar = () => {
     sidebar.classList.add('hidden');
-    sidebar.classList.remove('fixed', 'inset-y-0', 'left-0', 'z-50', 'shadow-2xl');
+    sidebar.classList.remove('md:flex', 'fixed', 'inset-y-0', 'left-0', 'z-50', 'shadow-2xl');
     if (backdrop) backdrop.classList.add('hidden');
+    setTimeout(() => window.dispatchEvent(new Event('resize')), 150);
   };
 
   const openSidebar = () => {
     sidebar.classList.remove('hidden');
-    sidebar.classList.add('fixed', 'inset-y-0', 'left-0', 'z-50', 'shadow-2xl');
-    if (backdrop) backdrop.classList.remove('hidden');
+    if (window.innerWidth >= 768) {
+      sidebar.classList.add('md:flex');
+      sidebar.classList.remove('fixed', 'inset-y-0', 'left-0', 'z-50', 'shadow-2xl');
+      if (backdrop) backdrop.classList.add('hidden');
+    } else {
+      sidebar.classList.add('fixed', 'inset-y-0', 'left-0', 'z-50', 'shadow-2xl');
+      if (backdrop) backdrop.classList.remove('hidden');
+    }
+    setTimeout(() => window.dispatchEvent(new Event('resize')), 150);
   };
 
   btnToggle.addEventListener('click', (e) => {
     e.stopPropagation();
-    if (sidebar.classList.contains('hidden')) {
+    const isDesktopHidden = window.innerWidth >= 768 && !sidebar.classList.contains('md:flex');
+    const isMobileHidden = window.innerWidth < 768 && sidebar.classList.contains('hidden');
+
+    if (isDesktopHidden || isMobileHidden) {
       openSidebar();
     } else {
       closeSidebar();

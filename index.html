@@ -175,20 +175,20 @@
   <div class="flex-1 flex flex-col h-screen min-w-0 bg-surface-container-lowest">
     
     <!-- TopNavBar Component -->
-    <header class="w-full h-16 border-b border-outline-variant bg-surface flex justify-between items-center px-4 sm:px-6 sticky top-0 z-50 shrink-0">
+    <header class="w-full h-16 border-b border-outline-variant bg-surface flex justify-between items-center px-3 sm:px-6 sticky top-0 z-50 shrink-0">
       <!-- Brand Logo & Title -->
-      <div class="flex items-center gap-3 sm:gap-6 h-full">
-        <!-- Mobile Sidebar Hamburger Toggle -->
-        <button id="btn-toggle-sidebar" class="md:hidden flex items-center justify-center p-1.5 text-on-surface-variant hover:text-primary transition-colors cursor-pointer" aria-label="Toggle Navigation Sidebar">
-          <span class="material-symbols-outlined" style="font-size: 24px;">menu</span>
+      <div class="flex items-center gap-2 sm:gap-4 h-full shrink-0">
+        <!-- Sidebar Toggle (Mobile Drawer & Desktop Collapse) -->
+        <button id="btn-toggle-sidebar" class="flex items-center justify-center w-8 h-8 rounded text-on-surface-variant hover:text-primary hover:bg-secondary-container transition-colors cursor-pointer" aria-label="Toggle Navigation Sidebar" title="Toggle Navigation Sidebar">
+          <span class="material-symbols-outlined" style="font-size: 22px;">menu</span>
         </button>
 
-        <span class="text-xl sm:text-2xl font-bold tracking-tighter text-primary flex items-center gap-2">
+        <span class="text-lg sm:text-xl font-black tracking-tighter text-primary flex items-center gap-2">
           <span id="brand-logo-text" data-i18n="brand_name">AapdaSetu</span> 
-          <span class="text-[10px] sm:text-xs font-mono font-normal tracking-normal px-2 py-0.5 bg-black text-white rounded" id="brand-tag-text" data-i18n="brand_tag">AapdaSetu</span>
+          <span class="text-[10px] font-mono font-bold px-1.5 py-0.5 bg-black text-white rounded" id="brand-tag-text" data-i18n="brand_tag">v4.0</span>
         </span>
         
-        <!-- Main Top Nav Links (Visible on ultra-wide screens to keep header uncluttered) -->
+        <!-- Main Top Nav Links (Visible on ultra-wide screens only) -->
         <nav class="hidden 2xl:flex items-center gap-4 h-full pt-1">
           <a class="nav-top-link text-primary border-b-2 border-primary h-full flex items-center px-2 text-xs font-semibold uppercase tracking-wider cursor-pointer" data-tab="gis-dashboard" data-i18n="tab_dashboard" href="#">Dashboard & Map</a>
           <a class="nav-top-link text-on-surface-variant hover:text-primary transition-colors h-full flex items-center px-2 text-xs font-semibold uppercase tracking-wider cursor-pointer" data-tab="ai-vision" data-i18n="tab_vision" href="#">AI Vision</a>
@@ -199,52 +199,50 @@
       </div>
 
       <!-- Trailing Status & Action Buttons Wrapper -->
-      <div class="flex items-center gap-1.5 sm:gap-2.5 h-full shrink-0 flex-nowrap">
+      <div class="flex items-center gap-1.5 sm:gap-2 h-full shrink-0">
         <!-- Tactical Role Hierarchy Switcher -->
-        <div class="flex items-center gap-1 border border-outline-variant px-2 py-1 bg-surface-container-low" title="Switch Tactical Command Role">
-          <span class="material-symbols-outlined text-primary" style="font-size: 16px;">shield_person</span>
+        <div class="h-8 flex items-center gap-1 border border-outline-variant px-2 bg-surface-container-low rounded text-xs" title="Switch Tactical Command Role">
+          <span class="material-symbols-outlined text-primary" style="font-size: 15px;">shield_person</span>
           <select id="sel-tactical-role" class="bg-transparent text-xs font-bold text-primary outline-none cursor-pointer uppercase">
-            <option value="CITIZEN">Citizen (Lv1)</option>
-            <option value="NDRF_RESPONDER">NDRF Operator (Lv2)</option>
-            <option value="INCIDENT_COMMANDER" selected>Commander (Lv3)</option>
+            <option value="CITIZEN">Citizen</option>
+            <option value="NDRF_RESPONDER">NDRF</option>
+            <option value="INCIDENT_COMMANDER" selected>Commander</option>
           </select>
         </div>
 
         <!-- Push-to-Talk Voice SOS & CAP Alert Quick Buttons -->
-        <button id="btn-open-voice-sos" class="btn btn-danger hidden sm:inline-flex items-center gap-1" style="padding: 4px 8px; font-size: 11px; white-space: nowrap;" title="Push-to-Talk Voice Distress Audio SOS">
-          <span class="material-symbols-outlined" style="font-size: 15px;">mic</span> <span class="hidden md:inline">Voice SOS</span>
+        <button id="btn-open-voice-sos" class="h-8 px-2.5 rounded bg-red-600 hover:bg-red-700 text-white font-bold text-xs uppercase flex items-center gap-1 transition-all shadow-sm cursor-pointer whitespace-nowrap" title="Push-to-Talk Voice Distress Audio SOS">
+          <span class="material-symbols-outlined" style="font-size: 15px;">mic</span> <span class="hidden xl:inline">Voice SOS</span>
         </button>
-        <button id="btn-open-cap-alert" class="btn hidden sm:inline-flex items-center gap-1" style="padding: 4px 8px; font-size: 11px; background: #0284c7; color: #ffffff; border-color: #0284c7; white-space: nowrap;" title="OASIS CAP v1.2 Government Alert Broadcaster">
-          <span class="material-symbols-outlined" style="font-size: 15px;">campaign</span> <span class="hidden md:inline">CAP Alert</span>
+        <button id="btn-open-cap-alert" class="h-8 px-2.5 rounded bg-sky-600 hover:bg-sky-700 text-white font-bold text-xs uppercase flex items-center gap-1 transition-all shadow-sm cursor-pointer whitespace-nowrap" title="OASIS CAP v1.2 Government Alert Broadcaster">
+          <span class="material-symbols-outlined" style="font-size: 15px;">campaign</span> <span class="hidden xl:inline">CAP Alert</span>
         </button>
 
         <!-- Language Switcher Button -->
-        <div class="flex items-center gap-1 border border-outline-variant px-1.5 sm:px-2 py-1 bg-surface-container-low">
-          <span class="material-symbols-outlined text-primary" style="font-size: 16px;">language</span>
+        <div class="h-8 flex items-center gap-1 border border-outline-variant px-2 bg-surface-container-low rounded text-xs">
+          <span class="material-symbols-outlined text-primary" style="font-size: 15px;">language</span>
           <select id="sel-lang-switch" class="bg-transparent text-xs font-bold text-primary outline-none cursor-pointer uppercase">
-            <option value="en">English</option>
-            <option value="hi">हिंदी (Hindi)</option>
-            <option value="bn">বাংলা (Bengali)</option>
-            <option value="or">ଓଡ଼ିଆ (Odia)</option>
+            <option value="en">EN</option>
+            <option value="hi">हिंदी</option>
+            <option value="bn">বাংলা</option>
+            <option value="or">ଓଡ଼ିଆ</option>
           </select>
         </div>
 
-        <div class="hidden xl:flex items-center gap-3">
-          <div class="flex items-center gap-2 px-2.5 py-1 border border-outline-variant bg-surface-container-low">
-            <span class="w-2 h-2 rounded-full bg-emerald-500 block animate-pulse"></span>
-            <span class="text-xs font-bold uppercase text-primary whitespace-nowrap" data-i18n="mesh_relay_active">Mesh Active</span>
-          </div>
-          <span class="text-xs text-on-surface-variant uppercase whitespace-nowrap">API: <strong class="text-emerald-600" id="hdr-gateway-status">14.2ms</strong></span>
+        <div class="hidden 2xl:flex items-center gap-2 h-8 px-2.5 border border-outline-variant bg-surface-container-low rounded text-xs font-mono">
+          <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+          <span class="font-bold uppercase text-primary whitespace-nowrap" data-i18n="mesh_relay_active">Mesh Active</span>
+          <span class="text-on-surface-variant uppercase whitespace-nowrap">API: <strong class="text-emerald-600" id="hdr-gateway-status">14.2ms</strong></span>
         </div>
 
         <div class="w-px h-6 bg-outline-variant hidden sm:block"></div>
 
         <div class="flex items-center gap-1">
-          <button class="w-9 h-9 flex items-center justify-center text-on-surface-variant hover:bg-secondary-container hover:text-primary transition-colors cursor-pointer" id="btn-notifications-top" title="Notifications">
-            <span class="material-symbols-outlined" style="font-size: 20px;">notifications</span>
+          <button class="w-8 h-8 flex items-center justify-center rounded border border-outline-variant text-on-surface-variant hover:bg-secondary-container hover:text-primary transition-colors cursor-pointer" id="btn-notifications-top" title="Notifications">
+            <span class="material-symbols-outlined" style="font-size: 18px;">notifications</span>
           </button>
-          <button class="w-9 h-9 flex items-center justify-center text-on-surface-variant hover:bg-secondary-container hover:text-primary transition-colors cursor-pointer" onclick="document.getElementById('sos-modal').classList.remove('hidden')" title="User Profile / Emergency SOS">
-            <span class="material-symbols-outlined" style="font-size: 20px;">account_circle</span>
+          <button class="w-8 h-8 flex items-center justify-center rounded border border-outline-variant text-on-surface-variant hover:bg-secondary-container hover:text-primary transition-colors cursor-pointer" onclick="document.getElementById('sos-modal').classList.remove('hidden')" title="User Profile / Emergency SOS">
+            <span class="material-symbols-outlined" style="font-size: 18px;">account_circle</span>
           </button>
         </div>
       </div>

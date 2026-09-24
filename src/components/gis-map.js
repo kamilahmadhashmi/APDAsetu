@@ -73,7 +73,7 @@ export function renderGisDashboard(container) {
       <div id="gis-drawer-backdrop" class="fixed inset-0 bg-black/50 z-20 hidden lg:hidden"></div>
 
       <!-- Active Incidents, Hospitals & Fleet Telemetry Panel (Left) -->
-      <aside id="gis-left-drawer" class="w-80 lg:w-96 border-r border-outline-variant bg-surface-container-lowest flex flex-col h-full z-30 shadow-xl lg:shadow-sm hidden lg:flex shrink-0 absolute lg:relative inset-y-0 left-0 bg-white">
+      <aside id="gis-left-drawer" class="${typeof window !== 'undefined' && window.innerWidth < 1024 ? 'hidden' : 'flex'} w-80 lg:w-96 border-r border-outline-variant bg-surface-container-lowest flex-col h-full z-30 shadow-xl lg:shadow-none shrink-0 absolute lg:relative inset-y-0 left-0 bg-white transition-all duration-200">
         
         <!-- Tab Headers -->
         <div class="p-2 border-b border-outline-variant flex bg-surface gap-1">
@@ -129,48 +129,52 @@ export function renderGisDashboard(container) {
       </aside>
 
       <!-- Interactive Map Interface (Center / Right) -->
-      <section class="flex-1 relative bg-surface-container-low overflow-hidden flex flex-col">
+      <section class="flex-1 relative bg-surface-container-low overflow-hidden flex flex-col min-w-0 h-full">
         
-        <!-- Top GIS Layer & Road Hazard Toolbar -->
-        <div class="w-full bg-surface border-b border-outline-variant px-4 py-2 flex items-center justify-between z-20 shrink-0 flex-wrap gap-2">
+        <!-- Top GIS Layer & Road Hazard Toolbar (Compact Single Row) -->
+        <div class="w-full h-11 bg-surface border-b border-outline-variant px-3 py-1 flex items-center justify-between z-20 shrink-0 gap-2 overflow-x-auto no-scrollbar">
           
-          <!-- GIS Layers Toggles -->
-          <div class="flex items-center gap-2 sm:gap-3 text-xs font-bold uppercase text-primary flex-wrap">
-            <button id="btn-toggle-gis-drawer" class="lg:hidden px-2 py-1 bg-surface-container-high border border-outline-variant text-[11px] font-bold uppercase flex items-center gap-1 hover:bg-slate-200 cursor-pointer text-primary" title="Toggle Incident Telemetry Drawer">
-              <span class="material-symbols-outlined text-sm">view_sidebar</span> Incidents
+          <!-- Left: Drawer Toggle + GIS Layers Badges -->
+          <div class="flex items-center gap-1.5 sm:gap-2 text-xs font-bold uppercase text-primary shrink-0">
+            <button id="btn-toggle-gis-drawer" class="h-8 px-2.5 bg-surface-container-high border border-outline-variant text-[11px] font-bold uppercase flex items-center gap-1 hover:bg-slate-200 cursor-pointer text-primary rounded shadow-xs" title="Toggle Incident Telemetry Drawer">
+              <span class="material-symbols-outlined text-sm">view_sidebar</span>
+              <span class="hidden sm:inline">Incidents</span>
             </button>
-            <span class="flex items-center gap-1"><span class="material-symbols-outlined text-sm">layers</span> GIS Layers:</span>
-            <label class="flex items-center gap-1 cursor-pointer">
-              <input type="checkbox" id="chk-user-loc" checked class="accent-sky-600"> 👤 You (Live)
-            </label>
-            <label class="flex items-center gap-1 cursor-pointer">
-              <input type="checkbox" id="chk-flood-layer" checked class="accent-red-600"> 🌊 Flood Extent
-            </label>
-            <label class="flex items-center gap-1 cursor-pointer">
-              <input type="checkbox" id="chk-safe-roads" checked class="accent-emerald-600"> 🟢 Safe Corridors
-            </label>
-            <label class="flex items-center gap-1 cursor-pointer">
-              <input type="checkbox" id="chk-danger-roads" checked class="accent-red-600"> 🔴 Hazards
-            </label>
-            <label class="flex items-center gap-1 cursor-pointer">
-              <input type="checkbox" id="chk-hospitals-layer" checked class="accent-black"> 🏥 Hospitals
-            </label>
-            <label class="flex items-center gap-1 cursor-pointer">
-              <input type="checkbox" id="chk-fleet-layer" checked class="accent-black"> 🛥️ Fleet
-            </label>
-            <label class="flex items-center gap-1 cursor-pointer text-cyan-600 font-bold" title="100% Offline Procedural Canvas Military Grid">
-              <input type="checkbox" id="chk-airgapped-map" class="accent-cyan-600"> 🛰️ Air-Gapped Grid
-            </label>
+            <div class="w-px h-5 bg-outline-variant hidden sm:block"></div>
+            
+            <div class="flex items-center gap-1 bg-surface-container-low border border-outline-variant p-0.5 rounded text-[11px]">
+              <label class="flex items-center gap-1 px-1.5 py-0.5 rounded cursor-pointer hover:bg-white text-slate-700" title="Live User Location">
+                <input type="checkbox" id="chk-user-loc" checked class="accent-sky-600 w-3 h-3"> <span>👤 You</span>
+              </label>
+              <label class="flex items-center gap-1 px-1.5 py-0.5 rounded cursor-pointer hover:bg-white text-slate-700" title="Flood Extent Inundation Polygon">
+                <input type="checkbox" id="chk-flood-layer" checked class="accent-red-600 w-3 h-3"> <span>🌊 Flood</span>
+              </label>
+              <label class="flex items-center gap-1 px-1.5 py-0.5 rounded cursor-pointer hover:bg-white text-slate-700" title="Safe Corridors">
+                <input type="checkbox" id="chk-safe-roads" checked class="accent-emerald-600 w-3 h-3"> <span>🟢 Safe</span>
+              </label>
+              <label class="flex items-center gap-1 px-1.5 py-0.5 rounded cursor-pointer hover:bg-white text-slate-700" title="Hazard Zones">
+                <input type="checkbox" id="chk-danger-roads" checked class="accent-red-600 w-3 h-3"> <span>🔴 Hazard</span>
+              </label>
+              <label class="flex items-center gap-1 px-1.5 py-0.5 rounded cursor-pointer hover:bg-white text-slate-700" title="Hospitals">
+                <input type="checkbox" id="chk-hospitals-layer" checked class="accent-black w-3 h-3"> <span>🏥 Hosp</span>
+              </label>
+              <label class="flex items-center gap-1 px-1.5 py-0.5 rounded cursor-pointer hover:bg-white text-slate-700" title="Fleet">
+                <input type="checkbox" id="chk-fleet-layer" checked class="accent-black w-3 h-3"> <span>🛥️ Fleet</span>
+              </label>
+              <label class="flex items-center gap-1 px-1.5 py-0.5 rounded cursor-pointer hover:bg-white text-cyan-700 font-bold" title="Air-Gapped Military Procedural Canvas Grid">
+                <input type="checkbox" id="chk-airgapped-map" class="accent-cyan-600 w-3 h-3"> <span>🛰️ Grid</span>
+              </label>
+            </div>
           </div>
 
-          <!-- Location Mode Controls & Main Action Buttons -->
-          <div class="flex items-center gap-2">
-            
+          <!-- Right: Location Mode + Surge + Recenter Controls -->
+          <div class="flex items-center gap-1.5 shrink-0">
             <!-- Live Location Status Badge with Dropdown Switcher -->
             <div class="relative">
-              <button id="btn-loc-mode-menu" class="px-3 py-1 bg-slate-900 border border-slate-700 text-white rounded text-xs font-mono font-bold uppercase flex items-center gap-1.5 hover:bg-slate-800 shadow-sm transition-all">
+              <button id="btn-loc-mode-menu" class="h-8 px-2.5 bg-slate-900 border border-slate-700 text-white rounded text-xs font-mono font-bold uppercase flex items-center gap-1.5 hover:bg-slate-800 shadow-xs transition-all cursor-pointer">
                 <span id="loc-status-dot" class="w-2 h-2 rounded-full bg-cyan-400 animate-pulse"></span>
-                <span id="loc-status-text">LOCATION: ● DEMO</span>
+                <span id="loc-status-text" class="hidden md:inline">LOCATION: ● DEMO</span>
+                <span class="md:hidden font-mono">DEMO</span>
                 <span class="material-symbols-outlined text-xs">arrow_drop_down</span>
               </button>
 
@@ -180,21 +184,21 @@ export function renderGisDashboard(container) {
                   Select Location Mode
                 </div>
                 
-                <button id="opt-mode-gps" class="w-full text-left px-2 py-1.5 hover:bg-slate-900 rounded flex items-center justify-between group">
+                <button id="opt-mode-gps" class="w-full text-left px-2 py-1.5 hover:bg-slate-900 rounded flex items-center justify-between group cursor-pointer">
                   <span class="flex items-center gap-2 font-bold">
                     <span class="w-2 h-2 rounded-full bg-emerald-400"></span> Live Browser GPS
                   </span>
                   <span class="text-[9px] font-mono text-emerald-400">navigator.gps</span>
                 </button>
 
-                <button id="opt-mode-demo" class="w-full text-left px-2 py-1.5 hover:bg-slate-900 rounded flex items-center justify-between group">
+                <button id="opt-mode-demo" class="w-full text-left px-2 py-1.5 hover:bg-slate-900 rounded flex items-center justify-between group cursor-pointer">
                   <span class="flex items-center gap-2 font-bold">
                     <span class="w-2 h-2 rounded-full bg-cyan-400"></span> Sector B4 Demo Location
                   </span>
                   <span class="text-[9px] font-mono text-cyan-400">Default</span>
                 </button>
 
-                <button id="opt-mode-sim" class="w-full text-left px-2 py-1.5 hover:bg-slate-900 rounded flex items-center justify-between group">
+                <button id="opt-mode-sim" class="w-full text-left px-2 py-1.5 hover:bg-slate-900 rounded flex items-center justify-between group cursor-pointer">
                   <span class="flex items-center gap-2 font-bold">
                     <span class="w-2 h-2 rounded-full bg-purple-400 animate-ping"></span> Simulate Evacuation Path
                   </span>
@@ -203,38 +207,41 @@ export function renderGisDashboard(container) {
               </div>
             </div>
 
-            <button class="px-3 py-1 bg-red-600 text-white text-xs font-bold uppercase hover:bg-red-700 shadow-sm flex items-center gap-1" id="btn-top-surge">
-              <span class="material-symbols-outlined" style="font-size:14px;">water</span> Simulate Rising Water
+            <button class="h-8 px-2.5 bg-red-600 text-white text-xs font-bold uppercase hover:bg-red-700 shadow-xs rounded flex items-center gap-1 whitespace-nowrap cursor-pointer" id="btn-top-surge" title="Trigger Live Flood Surge Simulation">
+              <span class="material-symbols-outlined" style="font-size:15px;">water</span> <span class="hidden lg:inline">Surge</span>
             </button>
-            <button class="px-3 py-1 bg-black text-white text-xs font-bold uppercase hover:bg-gray-800 flex items-center gap-1" id="btn-recenter-user">
-              <span class="material-symbols-outlined" style="font-size:14px;">my_location</span> Center on Me
+            <button class="h-8 px-2.5 bg-black text-white text-xs font-bold uppercase hover:bg-gray-800 shadow-xs rounded flex items-center gap-1 whitespace-nowrap cursor-pointer" id="btn-recenter-user" title="Center map on my position">
+              <span class="material-symbols-outlined" style="font-size:15px;">my_location</span> <span class="hidden sm:inline">Center</span>
             </button>
           </div>
         </div>
 
         <!-- Leaflet Map Container -->
-        <div class="flex-1 relative w-full h-full" id="map-wrap">
+        <div class="flex-1 relative w-full min-h-0" id="map-wrap">
           <div id="leaflet-container" class="w-full h-full bg-slate-900"></div>
           <div class="absolute inset-0 map-grid-overlay pointer-events-none"></div>
 
           <!-- Floating Map View Controls (Top-Right) -->
-          <div class="absolute right-6 top-6 flex flex-col gap-2 z-[400]">
-            <button class="w-10 h-10 bg-white border border-outline-variant text-primary flex items-center justify-center hover:bg-slate-100 shadow-sm" id="btn-zoom-in" title="Zoom In">
-              <span class="material-symbols-outlined">add</span>
+          <div class="absolute right-4 top-4 flex flex-col gap-1.5 z-[400]">
+            <button class="w-9 h-9 bg-white border border-outline-variant text-primary flex items-center justify-center hover:bg-slate-100 shadow-sm rounded cursor-pointer" id="btn-zoom-in" title="Zoom In">
+              <span class="material-symbols-outlined text-lg">add</span>
             </button>
-            <button class="w-10 h-10 bg-white border border-outline-variant text-primary flex items-center justify-center hover:bg-slate-100 shadow-sm" id="btn-zoom-out" title="Zoom Out">
-              <span class="material-symbols-outlined">remove</span>
+            <button class="w-9 h-9 bg-white border border-outline-variant text-primary flex items-center justify-center hover:bg-slate-100 shadow-sm rounded cursor-pointer" id="btn-zoom-out" title="Zoom Out">
+              <span class="material-symbols-outlined text-lg">remove</span>
             </button>
-            <button class="w-10 h-10 bg-sky-600 text-white border border-sky-700 flex items-center justify-center hover:bg-sky-700 shadow-md mt-2 transition-all active:scale-95" id="btn-my-loc" title="Center on My Location">
-              <span class="material-symbols-outlined">my_location</span>
+            <button class="w-9 h-9 bg-sky-600 text-white border border-sky-700 flex items-center justify-center hover:bg-sky-700 shadow-md rounded cursor-pointer transition-all active:scale-95" id="btn-my-loc" title="Center on My Location">
+              <span class="material-symbols-outlined text-lg">my_location</span>
             </button>
-            <button class="w-10 h-10 bg-slate-950 text-white border border-slate-700 flex items-center justify-center hover:bg-slate-900 shadow-md" id="btn-toggle-inspector" title="Toggle Location Inspector">
-              <span class="material-symbols-outlined">person_pin_circle</span>
+            <button class="w-9 h-9 bg-slate-900 text-white border border-slate-700 flex items-center justify-center hover:bg-slate-800 shadow-md rounded cursor-pointer" id="btn-toggle-legend-top" title="Toggle Tactical Legend">
+              <span class="material-symbols-outlined text-lg">info</span>
+            </button>
+            <button class="w-9 h-9 bg-slate-950 text-white border border-slate-700 flex items-center justify-center hover:bg-slate-900 shadow-md rounded cursor-pointer" id="btn-toggle-inspector" title="Toggle Location Inspector">
+              <span class="material-symbols-outlined text-lg">person_pin_circle</span>
             </button>
           </div>
 
-          <!-- USER LOCATION INSPECTOR CARD (Floating Bottom-Left) -->
-          <div id="user-location-inspector" class="absolute bottom-6 left-6 z-[400] w-80 bg-slate-950/95 backdrop-blur-md text-white border border-slate-700 p-4 shadow-2xl rounded-none font-sans space-y-3 transition-all duration-300">
+          <!-- USER LOCATION INSPECTOR CARD (Floating Bottom-Left, HIDDEN by default) -->
+          <div id="user-location-inspector" class="hidden absolute bottom-16 left-4 z-[400] w-80 max-w-[calc(100vw-32px)] bg-slate-950/95 backdrop-blur-md text-white border border-slate-700 p-3.5 shadow-2xl rounded font-sans space-y-3 transition-all duration-300">
             <div class="flex justify-between items-center border-b border-slate-800 pb-2">
               <div class="flex items-center gap-2">
                 <div class="w-6 h-6 rounded-full bg-sky-500/20 border border-sky-400 flex items-center justify-center">
@@ -245,70 +252,78 @@ export function renderGisDashboard(container) {
                   <span class="text-[9px] font-mono text-sky-400" id="insp-source-badge">DEMO LOCATION</span>
                 </div>
               </div>
-              <button id="btn-close-inspector" class="text-slate-400 hover:text-white p-0.5">
+              <button id="btn-close-inspector" class="text-slate-400 hover:text-white p-1 cursor-pointer">
                 <span class="material-symbols-outlined text-sm">close</span>
               </button>
             </div>
 
             <!-- Coordinates & Accuracy Metrics -->
             <div class="grid grid-cols-2 gap-2 text-xs font-mono">
-              <div class="bg-slate-900 p-2 border border-slate-800">
+              <div class="bg-slate-900 p-2 border border-slate-800 rounded">
                 <span class="text-[9px] text-gray-400 uppercase block">Coordinates</span>
                 <strong class="text-[11px] text-cyan-300 block truncate" id="insp-coords">20.2961, 85.8245</strong>
               </div>
-              <div class="bg-slate-900 p-2 border border-slate-800">
+              <div class="bg-slate-900 p-2 border border-slate-800 rounded">
                 <span class="text-[9px] text-gray-400 uppercase block">Accuracy</span>
                 <strong class="text-[11px] text-emerald-400" id="insp-accuracy">±14m Confidence</strong>
               </div>
             </div>
 
             <!-- Nearest Infrastructure Calculations -->
-            <div class="space-y-1.5 text-xs font-mono bg-slate-900/80 p-2.5 border border-slate-800">
+            <div class="space-y-1.5 text-xs font-mono bg-slate-900/80 p-2.5 border border-slate-800 rounded">
               <div class="flex justify-between items-center text-slate-300">
-                <span class="flex items-center gap-1"><span class="material-symbols-outlined text-xs text-amber-400">local_hospital</span> Nearest Hospital:</span>
-                <strong class="text-amber-400 font-bold" id="insp-nearest-hosp">Apex Trauma (2.7 km)</strong>
+                <span class="flex items-center gap-1"><span class="material-symbols-outlined text-xs text-amber-400">local_hospital</span> Nearest Hosp:</span>
+                <strong class="text-amber-400 font-bold truncate max-w-[130px]" id="insp-nearest-hosp">Apex (2.7 km)</strong>
               </div>
               <div class="flex justify-between items-center text-slate-300">
-                <span class="flex items-center gap-1"><span class="material-symbols-outlined text-xs text-emerald-400">night_shelter</span> Nearest Safe Shelter:</span>
-                <strong class="text-emerald-400 font-bold" id="insp-nearest-shelter">St. Jude Hub (1.2 km)</strong>
+                <span class="flex items-center gap-1"><span class="material-symbols-outlined text-xs text-emerald-400">night_shelter</span> Nearest Shelter:</span>
+                <strong class="text-emerald-400 font-bold truncate max-w-[130px]" id="insp-nearest-shelter">St. Jude (1.2 km)</strong>
               </div>
               <div class="flex justify-between items-center text-slate-300">
-                <span class="flex items-center gap-1"><span class="material-symbols-outlined text-xs text-sky-400">directions_boat</span> Nearest Rescue Team:</span>
-                <strong class="text-sky-400 font-bold" id="insp-nearest-rescue">Boat Alpha (0.8 km)</strong>
+                <span class="flex items-center gap-1"><span class="material-symbols-outlined text-xs text-sky-400">directions_boat</span> Rescue Team:</span>
+                <strong class="text-sky-400 font-bold truncate max-w-[130px]" id="insp-nearest-rescue">Boat Alpha (0.8 km)</strong>
               </div>
             </div>
 
             <!-- Quick Action Buttons -->
             <div class="flex gap-2 pt-1">
-              <button id="btn-insp-route-shelter" class="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white py-1.5 px-2 text-[10px] font-bold uppercase rounded-none transition-all flex items-center justify-center gap-1 shadow">
+              <button id="btn-insp-route-shelter" class="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white py-1.5 px-2 text-[10px] font-bold uppercase rounded transition-all flex items-center justify-center gap-1 shadow cursor-pointer">
                 <span class="material-symbols-outlined text-xs">route</span> Evac Route
               </button>
-              <button id="btn-insp-center" class="bg-slate-800 hover:bg-slate-700 text-white py-1.5 px-3 text-[10px] font-bold uppercase rounded-none transition-all flex items-center justify-center gap-1">
+              <button id="btn-insp-center" class="bg-slate-800 hover:bg-slate-700 text-white py-1.5 px-3 text-[10px] font-bold uppercase rounded transition-all flex items-center justify-center gap-1 cursor-pointer">
                 <span class="material-symbols-outlined text-xs">filter_center_focus</span> Center
               </button>
             </div>
           </div>
 
-          <!-- Floating Map Legend (Bottom-Right) -->
-          <div class="absolute bottom-6 right-6 z-[400] bg-slate-950/90 text-white border border-slate-700 p-3 rounded-none text-[11px] font-mono shadow-xl hidden md:block">
-            <div class="font-bold text-gray-300 mb-1 border-b border-slate-700 pb-1">TACTICAL ROAD & FLEET LEGEND</div>
-            <div class="flex flex-col gap-1">
-              <div class="flex items-center gap-2"><span class="w-3 h-3 rounded-full bg-sky-400 border border-white inline-block"></span> 👤 You (Live User / Device)</div>
-              <div class="flex items-center gap-2"><span class="w-4 h-1 bg-emerald-500 block"></span> 🟢 Safe Passable Corridor</div>
-              <div class="flex items-center gap-2"><span class="w-4 h-1 bg-red-600 block"></span> 🔴 Dangerous Submerged Route</div>
-              <div class="flex items-center gap-2"><span class="w-3 h-3 rounded-full bg-sky-400 inline-block"></span> Utility Rescue Fleet</div>
-              <div class="flex items-center gap-2"><span class="w-3 h-3 bg-amber-500 inline-block"></span> Hospital Occupancy Hub</div>
-              <div class="flex items-center gap-2"><span class="w-3 h-3 bg-emerald-600 inline-block"></span> Safe Disaster Shelter</div>
+          <!-- TACTICAL MAP LEGEND (Floating Bottom-Right, HIDDEN by default as a toggleable popover) -->
+          <div id="tactical-legend-card" class="hidden absolute bottom-16 right-4 z-[400] bg-slate-950/95 backdrop-blur-md text-white border border-slate-700 p-3 rounded text-[11px] font-mono shadow-2xl w-64 max-w-[calc(100vw-32px)]">
+            <div class="flex items-center justify-between font-bold text-gray-300 mb-1.5 border-b border-slate-800 pb-1">
+              <span>MAP TACTICAL LEGEND</span>
+              <button id="btn-close-legend" class="text-slate-400 hover:text-white p-0.5 cursor-pointer">
+                <span class="material-symbols-outlined text-xs">close</span>
+              </button>
+            </div>
+            <div class="flex flex-col gap-1.5">
+              <div class="flex items-center gap-2"><span class="w-3 h-3 rounded-full bg-sky-400 border border-white inline-block shrink-0"></span> 👤 You (Live Device)</div>
+              <div class="flex items-center gap-2"><span class="w-4 h-1 bg-emerald-500 block shrink-0"></span> 🟢 Safe Passable Corridor</div>
+              <div class="flex items-center gap-2"><span class="w-4 h-1 bg-red-600 block shrink-0"></span> 🔴 Dangerous Submerged Route</div>
+              <div class="flex items-center gap-2"><span class="w-3 h-3 rounded-full bg-sky-400 inline-block shrink-0"></span> 🛥️ Rescue Fleet</div>
+              <div class="flex items-center gap-2"><span class="w-3 h-3 bg-amber-500 inline-block shrink-0"></span> 🏥 Hospital Node</div>
+              <div class="flex items-center gap-2"><span class="w-3 h-3 bg-emerald-600 inline-block shrink-0"></span> 🛡️ Evac Safe Shelter</div>
             </div>
           </div>
 
-          <!-- Global Action Bar Bottom Center -->
-          <div class="absolute bottom-6 left-1/2 -translate-x-1/2 flex gap-3 z-[400]">
-            <button class="bg-white border border-outline-variant text-primary px-5 py-2 text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 hover:bg-slate-100 shadow-md" id="btn-bottom-inspect">
-              <span class="material-symbols-outlined" style="font-size: 18px;">my_location</span> My Position
+          <!-- Global Bottom-Left Action Bar (Never overlaps inspector or legend!) -->
+          <div class="absolute bottom-4 left-4 flex items-center gap-2 z-[400]">
+            <button class="bg-white border border-outline-variant text-primary px-3.5 py-1.5 text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 hover:bg-slate-100 shadow-md rounded cursor-pointer" id="btn-bottom-inspect">
+              <span class="material-symbols-outlined text-sm">my_location</span> My Position
             </button>
-            <button class="bg-primary text-on-primary px-6 py-2 text-xs font-bold uppercase tracking-wider flex items-center gap-2 hover:bg-gray-800 shadow-md" onclick="document.getElementById('sos-modal').classList.remove('hidden')">
-              <span class="material-symbols-outlined" style="font-size: 18px;">add</span> Broadcast SOS
+            <button class="bg-primary text-on-primary px-4 py-1.5 text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 hover:bg-gray-800 shadow-md rounded cursor-pointer" onclick="document.getElementById('sos-modal').classList.remove('hidden')">
+              <span class="material-symbols-outlined text-sm">add_alert</span> Broadcast SOS
+            </button>
+            <button class="bg-slate-900 border border-slate-700 text-white px-2.5 py-1.5 text-xs font-bold uppercase tracking-wider flex items-center gap-1 hover:bg-slate-800 shadow-md rounded cursor-pointer" id="btn-toggle-legend" title="Toggle Map Legend">
+              <span class="material-symbols-outlined text-sm">info</span> Legend
             </button>
           </div>
         </div>
@@ -1119,16 +1134,29 @@ function attachGisEvents() {
       const isHidden = leftDrawer.classList.contains('hidden');
       if (isHidden) {
         leftDrawer.classList.remove('hidden');
-        if (drawerBackdrop) drawerBackdrop.classList.remove('hidden');
+        leftDrawer.classList.add('flex');
+        if (window.innerWidth < 1024 && drawerBackdrop) drawerBackdrop.classList.remove('hidden');
       } else {
         leftDrawer.classList.add('hidden');
+        leftDrawer.classList.remove('flex');
         if (drawerBackdrop) drawerBackdrop.classList.add('hidden');
       }
-      if (map) setTimeout(() => map.invalidateSize(), 200);
+      if (map) setTimeout(() => map.invalidateSize(), 150);
     };
     btnToggleDrawer.addEventListener('click', toggleDrawer);
     if (drawerBackdrop) drawerBackdrop.addEventListener('click', toggleDrawer);
   }
+
+  // Tactical Legend Card
+  const toggleLegend = () => {
+    const legend = document.getElementById('tactical-legend-card');
+    if (legend) legend.classList.toggle('hidden');
+  };
+  document.getElementById('btn-toggle-legend')?.addEventListener('click', toggleLegend);
+  document.getElementById('btn-toggle-legend-top')?.addEventListener('click', toggleLegend);
+  document.getElementById('btn-close-legend')?.addEventListener('click', () => {
+    document.getElementById('tactical-legend-card')?.classList.add('hidden');
+  });
 
   document.getElementById('tab-left-incidents')?.addEventListener('click', (e) => {
     setActiveTab(e.target);
