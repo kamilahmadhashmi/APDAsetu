@@ -21,9 +21,12 @@ if hasattr(sys.stdout, "reconfigure"):
 
 def test_node_server_hardening():
     print("[1/2] Testing Node.js serve.js Crash Resilience...")
+    env = os.environ.copy()
+    env["PORT"] = "8089"
     node_proc = subprocess.Popen(
         ["node", "serve.js"],
         cwd=os.path.abspath(os.path.join(os.path.dirname(__file__), "..")),
+        env=env,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE
     )
@@ -31,7 +34,7 @@ def test_node_server_hardening():
 
     try:
         # Test 1: Normal request
-        req = urllib.request.Request("http://127.0.0.1:8080/")
+        req = urllib.request.Request("http://127.0.0.1:8089/")
         with urllib.request.urlopen(req) as resp:
             assert resp.status == 200
             assert resp.headers.get("x-content-type-options") == "nosniff"
@@ -41,8 +44,8 @@ def test_node_server_hardening():
         # Send raw malformed request
         import socket
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        s.connect(("127.0.0.1", 8080))
-        s.sendall(b"GET /% HTTP/1.1\r\nHost: 127.0.0.1:8080\r\n\r\n")
+        s.connect(("127.0.0.1", 8089))
+        s.sendall(b"GET /% HTTP/1.1\r\nHost: 127.0.0.1:8089\r\n\r\n")
         response = s.recv(1024).decode("utf-8", errors="ignore")
         s.close()
         assert "400 Bad Request" in response or "400" in response

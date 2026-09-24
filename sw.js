@@ -4,7 +4,7 @@
    during extreme natural disaster cellular and power grid collapse.
    ========================================================================== */
 
-const CACHE_NAME = 'aapdasetu-disaster-v4';
+const CACHE_NAME = 'aapdasetu-disaster-v5';
 const OFFLINE_URLS = [
   '/',
   '/index.html',
@@ -21,11 +21,17 @@ const OFFLINE_URLS = [
   '/src/services/websocket-service.js',
   '/src/services/weather-ingress.js',
   '/src/services/flood-prediction.js',
+  '/src/services/identity-service.js',
+  '/src/services/hardware-mesh-bridge.js',
+  '/src/services/lora-packet-codec.js',
+  '/src/services/offline-map-cache.js',
   '/src/components/gis-map.js',
   '/src/components/ai-vision.js',
   '/src/components/mesh-network.js',
   '/src/components/routing-solver.js',
   '/src/components/architecture.js',
+  '/src/components/voice-distress-modal.js',
+  '/src/components/cap-alert-dialog.js',
   '/src/vendor/leaflet.js',
   '/src/vendor/leaflet.css',
   '/src/vendor/lucide.min.js',

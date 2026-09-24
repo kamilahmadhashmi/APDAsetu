@@ -460,7 +460,7 @@ class LocationService {
   /* --------------------------------------------------------------------------
      EMERGENCY DISTRESS DISPATCH (USES LIVE USER LOCATION)
      -------------------------------------------------------------------------- */
-  transmitDistressPacket(details = {}) {
+  transmitDistressPacket(details = {}, options = { autoIngest: true }) {
     const state = this.getState();
     const packetId = `SOS-${Math.floor(1000 + Math.random() * 9000)}`;
 
@@ -494,8 +494,8 @@ class LocationService {
       window.dispatchEvent(new CustomEvent('resqnet-distress-packet', { detail: packet }));
     }
 
-    // Persist to backend API gateway if reachable
-    if (typeof fetch !== 'undefined') {
+    // Persist to backend API gateway if reachable and autoIngest is true
+    if (options.autoIngest && typeof fetch !== 'undefined') {
       fetch('/api/v1/incidents/ingest', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

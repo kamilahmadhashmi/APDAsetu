@@ -237,11 +237,11 @@ function initSosModal() {
     document.getElementById('sos-modal')?.classList.add('hidden');
     form.reset();
 
-    // Broadcast distress packet with current user coordinates
+    // Broadcast distress packet with current user coordinates (autoIngest false because app.js ingests encrypted envelope below)
     const packet = locationService.transmitDistressPacket({
       situation: type,
       notes: details
-    });
+    }, { autoIngest: false });
 
     // Real AES-256-GCM authenticated encryption using native Web Crypto API
     let envelope = null;

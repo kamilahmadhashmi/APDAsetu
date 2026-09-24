@@ -742,9 +742,9 @@ function plotIncidentMarkers(incidents) {
     const marker = L.marker([inc.lat, inc.lng], { icon: customIcon }).addTo(map);
     marker.bindPopup(`
       <div style="font-family:sans-serif; padding:4px;">
-        <strong style="color:#ef4444;">${inc.prio}: ${inc.title}</strong><br>
-        <span style="font-size:12px; color:#333;">${inc.desc}</span><br>
-        <span style="font-size:11px; color:#666; font-family:monospace;">Mesh Telemetry: ${inc.meshHop}</span>
+        <strong style="color:#ef4444;">${escapeHtml(inc.prio)}: ${escapeHtml(inc.title)}</strong><br>
+        <span style="font-size:12px; color:#333;">${escapeHtml(inc.desc)}</span><br>
+        <span style="font-size:11px; color:#666; font-family:monospace;">Mesh Telemetry: ${escapeHtml(inc.meshHop)}</span>
       </div>
     `);
     incidentMarkers.push(marker);
@@ -770,9 +770,9 @@ function plotHospitalMarkers(hospitals) {
     const marker = L.marker([hosp.lat, hosp.lng], { icon: customIcon }).addTo(map);
     marker.bindPopup(`
       <div style="font-family:sans-serif; padding:4px;">
-        <strong>${hosp.name}</strong><br>
-        Occupancy: <strong>${hosp.occupied}/${hosp.total} beds (${hosp.pct}%)</strong><br>
-        Status: <span style="color:${hosp.color}; font-weight:bold;">${hosp.status}</span>
+        <strong>${escapeHtml(hosp.name)}</strong><br>
+        Occupancy: <strong>${escapeHtml(hosp.occupied)}/${escapeHtml(hosp.total)} beds (${escapeHtml(hosp.pct)}%)</strong><br>
+        Status: <span style="color:${hosp.color}; font-weight:bold;">${escapeHtml(hosp.status)}</span>
       </div>
     `);
     hospitalMarkers.push(marker);
@@ -798,10 +798,10 @@ function plotFleetMarkers(fleet) {
     const marker = L.marker([unit.lat, unit.lng], { icon: customIcon }).addTo(map);
     marker.bindPopup(`
       <div style="font-family:sans-serif; padding:4px;">
-        <strong>${unit.name}</strong><br>
-        Type: <strong>${unit.type}</strong><br>
-        Crew: <span>${unit.crew}</span><br>
-        Status: <strong style="color:${unit.color};">${unit.status}</strong>
+        <strong>${escapeHtml(unit.name)}</strong><br>
+        Type: <strong>${escapeHtml(unit.type)}</strong><br>
+        Crew: <span>${escapeHtml(unit.crew)}</span><br>
+        Status: <strong style="color:${unit.color};">${escapeHtml(unit.status)}</strong>
       </div>
     `);
     fleetMarkers.push(marker);
@@ -827,9 +827,9 @@ function plotShelterMarkers(shelters) {
     const marker = L.marker([s.lat, s.lng], { icon: customIcon }).addTo(map);
     marker.bindPopup(`
       <div style="font-family:sans-serif; padding:4px;">
-        <strong style="color:${s.color};">${s.name}</strong><br>
-        Type: <strong>${s.type}</strong><br>
-        Capacity: <strong>${s.capacity}</strong>
+        <strong style="color:${s.color};">${escapeHtml(s.name)}</strong><br>
+        Type: <strong>${escapeHtml(s.type)}</strong><br>
+        Capacity: <strong>${escapeHtml(s.capacity)}</strong>
       </div>
     `);
     shelterMarkers.push(marker);
@@ -966,7 +966,11 @@ async function calculateAndRenderEvacRoute() {
 
     const routeData = await res.json();
     if (!routeData.success || !routeData.path_coordinates || routeData.path_coordinates.length === 0) {
-      alert('Unable to compute safe corridor. Flooding is impassable.');
+      showSystemPrompt({
+        title: 'Corridor Calculation Notice',
+        message: 'Unable to compute safe corridor. Flooding is impassable for selected vehicle type.',
+        details: 'Threshold Exceeded: Live water depth along key segments exceeds clearance limit.'
+      });
       return;
     }
 
@@ -995,7 +999,11 @@ async function calculateAndRenderEvacRoute() {
     });
   } catch (err) {
     console.error('Routing calculation failed:', err);
-    alert('Failed to connect to routing engine.');
+    showSystemPrompt({
+      title: 'Routing Engine Error',
+      message: 'Failed to connect to Dijkstra routing engine service.',
+      details: String(err && err.message ? err.message : err)
+    });
   } finally {
     if (btn) btn.innerHTML = '<span class="material-symbols-outlined text-xs">route</span> Evac Route';
   }

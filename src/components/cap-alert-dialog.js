@@ -113,7 +113,11 @@ export function openCapAlertModal() {
         preview.textContent = xml;
       }
     } catch (e) {
-      alert('Unable to fetch CAP XML feed: ' + e.message);
+      showSystemPrompt({
+        title: 'CAP Feed Access Notice',
+        message: 'Unable to retrieve OASIS CAP XML feed from API gateway.',
+        details: String(e && e.message ? e.message : e)
+      });
     }
   });
 
@@ -144,7 +148,11 @@ export function openCapAlertModal() {
         preview.textContent = data.cap_xml;
       }
     } catch (e) {
-      alert('Broadcast failed: ' + e.message);
+      showSystemPrompt({
+        title: 'Broadcast Dispatch Error',
+        message: 'Failed to broadcast CAP emergency alert to gateway.',
+        details: String(e && e.message ? e.message : e)
+      });
     }
   });
 }

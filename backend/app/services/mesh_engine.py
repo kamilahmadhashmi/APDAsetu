@@ -146,11 +146,22 @@ class MeshEngine:
         sig_base = f"{inc_id}:{raw_payload.get('lat')}:{raw_payload.get('lng')}:{datetime.now(timezone.utc).isoformat()}"
         packet_hash = "0x" + hashlib.sha256(sig_base.encode("utf-8")).hexdigest()[:28]
 
+        prio_type = raw_payload.get("prio_type")
+        if not prio_type:
+            triage_val = str(raw_payload.get("triage", "CRITICAL")).upper()
+            priority_val = str(raw_payload.get("priority", "Priority 1")).lower()
+            if "CRITICAL" in triage_val or "1" in priority_val:
+                prio_type = "red"
+            elif "URGENT" in triage_val or "2" in priority_val:
+                prio_type = "amber"
+            else:
+                prio_type = "emerald"
+
         new_inc = Incident(
             id=inc_id,
             title=raw_payload.get("title", "Emergency SOS Alert"),
             priority=raw_payload.get("priority", "Priority 1"),
-            prio_type=raw_payload.get("prio_type", "red"),
+            prio_type=prio_type,
             time="Just now",
             desc=raw_payload.get("desc", "Distress signal transmitted via field network"),
             tags_json=json.dumps(tags),
@@ -164,7 +175,11 @@ class MeshEngine:
             packet_hash=packet_hash,
             created_at=datetime.now(timezone.utc)
         )
-        db.add(new_inc)
+        existing = db.query(Incident).filter(Incident.id == inc_id).first()
+        if existing:
+            new_inc = db.merge(new_inc)
+        else:
+            db.add(new_inc)
         db.commit()
         db.refresh(new_inc)
 

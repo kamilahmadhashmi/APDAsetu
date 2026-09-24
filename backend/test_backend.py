@@ -427,6 +427,75 @@ def test_voice_distress_triage():
 
     print("  [PASS] Multilingual acoustic keyword spotting and automated Priority 1 voice triage verified.")
 
+def test_handle_api_request_parity_and_resilience():
+    print("[15/15] Testing Synchronous Gateway (handle_api_request) Parity & Ingestion Resilience...")
+    from app.api.endpoints import handle_api_request
+    from app.services.auth_engine import auth_engine_service
+
+    # 1. CAP XML Feed
+    cap_resp = handle_api_request("/api/v1/alerts/cap.xml", "GET")
+    assert cap_resp["status"] == "SUCCESS"
+    assert "<?xml" in cap_resp["xml"]
+    assert "<alert" in cap_resp["xml"]
+
+    # 2. CAP Alerts List & Broadcast
+    alerts_list = handle_api_request("/api/v1/alerts", "GET")
+    assert alerts_list["status"] == "SUCCESS"
+    assert len(alerts_list["alerts"]) > 0
+
+    bcast = handle_api_request("/api/v1/alerts/broadcast", "POST", {
+        "event": "Severe Cyclone Alert",
+        "headline": "Cyclone Approaching Coastal Belt",
+        "severity": "Extreme",
+        "urgency": "Immediate"
+    })
+    assert bcast["status"] == "BROADCASTED"
+    assert bcast["alert"]["event"] == "Severe Cyclone Alert"
+
+    # 3. Auth Token & Verification
+    token_resp = handle_api_request("/api/v1/auth/token", "POST", {"role": "COMMANDER", "node_id": "HQ-CMD"})
+    assert token_resp["status"] == "ISSUED"
+    assert len(token_resp["token"]) > 20
+
+    keypair = auth_engine_service.generate_ed25519_keypair()
+    sig = auth_engine_service.sign_payload(keypair["private_key_hex"], b"TEST_PAYLOAD")
+    verify_resp = handle_api_request("/api/v1/auth/verify_signature", "POST", {
+        "public_key_hex": keypair["public_key_hex"],
+        "signature_hex": sig,
+        "message": "TEST_PAYLOAD"
+    })
+    assert verify_resp["verified"] is True
+
+    # 4. Ingestion Resilience (Duplicate ID Upsert)
+    db = SessionLocal()
+    try:
+        dup_id = "INC-TEST-DUP-01"
+        res1 = mesh_engine_service.ingest_distress_packet(db, {
+            "id": dup_id,
+            "title": "Initial SOS Report",
+            "lat": 20.2961,
+            "lng": 85.8245,
+            "priority": "Priority 1",
+            "triage": "CRITICAL"
+        })
+        assert res1["status"] == "INGESTED_SUCCESSFULLY"
+
+        # Re-ingesting with identical ID must update/merge without 500 error
+        res2 = mesh_engine_service.ingest_distress_packet(db, {
+            "id": dup_id,
+            "title": "Updated SOS Report",
+            "lat": 20.2962,
+            "lng": 85.8246,
+            "priority": "Priority 1",
+            "triage": "CRITICAL"
+        })
+        assert res2["status"] == "INGESTED_SUCCESSFULLY"
+        assert res2["incident"]["title"] == "Updated SOS Report"
+    finally:
+        db.close()
+
+    print("  [PASS] Full API parity, CAP alerts, Auth verification, and duplicate ID upsert resilience verified.")
+
 def run_all():
     print("\n==========================================================================")
     print("AAPDASETU PRODUCTION SYSTEM VERIFICATION TEST SUITE")
@@ -445,7 +514,8 @@ def run_all():
     test_cap_alerting_engine()
     test_ed25519_and_rbac()
     test_voice_distress_triage()
-    print("\nALL 14 PRODUCTION SYSTEM TESTS PASSED PERFECTLY!\n")
+    test_handle_api_request_parity_and_resilience()
+    print("\nALL 15 PRODUCTION SYSTEM TESTS PASSED PERFECTLY!\n")
 
 if __name__ == "__main__":
     run_all()

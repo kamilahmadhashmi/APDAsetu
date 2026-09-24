@@ -2,7 +2,7 @@ const http = require('http');
 const fs = require('fs');
 const path = require('path');
 
-const PORT = 8080;
+const PORT = parseInt(process.env.PORT || '8080', 10);
 const ROOT = __dirname;
 
 const MIME_TYPES = {
@@ -23,6 +23,31 @@ const MIME_TYPES = {
 };
 
 const server = http.createServer((req, res) => {
+  // Reverse proxy API calls to the FastAPI backend running on port 8000
+  if ((req.url || '').startsWith('/api/')) {
+    const proxyReq = http.request({
+      hostname: '127.0.0.1',
+      port: 8000,
+      path: req.url,
+      method: req.method,
+      headers: req.headers
+    }, (proxyRes) => {
+      res.writeHead(proxyRes.statusCode, proxyRes.headers);
+      proxyRes.pipe(res, { end: true });
+    });
+
+    proxyReq.on('error', (err) => {
+      res.writeHead(502, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({
+        error: 'Bad Gateway: FastAPI backend unreachable on port 8000',
+        detail: err.message
+      }));
+    });
+
+    req.pipe(proxyReq, { end: true });
+    return;
+  }
+
   let reqUrl;
   try {
     reqUrl = decodeURI((req.url || '').split('?')[0]);

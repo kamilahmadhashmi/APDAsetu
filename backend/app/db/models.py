@@ -4,7 +4,7 @@ AEGIS-MESH / AAPDASETU - RELATIONAL DATABASE SCHEMAS (SQLALCHEMY)
 ==========================================================================
 """
 
-from datetime import datetime
+from datetime import datetime, timezone
 import json
 from sqlalchemy import Column, String, Integer, Float, Boolean, DateTime, Text
 from .database import Base
@@ -28,7 +28,7 @@ class Incident(Base):
     encrypted_payload = Column(Text, nullable=True)
     packet_hash = Column(String(100), nullable=True)
     is_verified = Column(Boolean, default=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
 
     def to_dict(self):
         tags = []
