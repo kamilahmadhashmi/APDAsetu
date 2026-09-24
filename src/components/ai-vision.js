@@ -47,13 +47,13 @@ let floodSegmentationOpacity = 0.55;
 export function renderAiVisionEngine(container) {
   const feeds = getFeedSources();
   container.innerHTML = `
-    <div style="display: flex; width: 100%; height: 100%; gap: 16px; padding: 16px;">
+    <div class="flex flex-col lg:flex-row w-full h-full gap-3 p-3 lg:gap-4 lg:p-4 box-border overflow-y-auto lg:overflow-hidden">
       
-      <!-- Left Visual Canvas Area (68%) -->
-      <div style="flex: 1; display: flex; flex-direction: column; gap: 12px; height: 100%;">
+      <!-- Left Visual Canvas Area -->
+      <div class="flex-1 flex flex-col gap-3 min-w-0 min-h-[360px] lg:min-h-0 lg:h-full">
         
         <!-- Toolbar -->
-        <div class="glass-panel" style="padding: 10px 16px; display: flex; align-items: center; justify-content: space-between; border-radius: var(--radius-md);">
+        <div class="glass-panel" style="padding: 10px 16px; display: flex; align-items: center; justify-content: space-between; border-radius: var(--radius-md); flex-wrap: wrap; gap: 8px;">
           <div style="display: flex; align-items: center; gap: 12px;">
             <span style="font-size: 13px; font-weight: 700; color: var(--text-main); display: flex; align-items: center; gap: 6px;">
               <i data-lucide="eye" style="color: var(--accent-cyan);"></i> ${t('yolo_pipeline')}
@@ -61,7 +61,7 @@ export function renderAiVisionEngine(container) {
             <span class="badge badge-cyan" id="ai-model-tag">YOLOv8x-SEG FP16</span>
           </div>
 
-          <div style="display: flex; gap: 8px; align-items: center;">
+          <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
             <select id="sel-feed-source" style="background: rgba(15,23,42,0.9); color: var(--text-main); border: 1px solid var(--border-color); padding: 4px 10px; border-radius: var(--radius-sm); font-size: 12px;">
               <option value="drone_alpha">${t('feed_drone')}</option>
               <option value="satellite_sentinel">${t('feed_sat')}</option>
@@ -78,7 +78,7 @@ export function renderAiVisionEngine(container) {
         </div>
 
         <!-- Vision Canvas Box -->
-        <div class="glass-panel" style="flex: 1; padding: 0; position: relative; overflow: hidden; display: flex; justify-content: center; align-items: center; border-radius: var(--radius-md); background: #04070d;">
+        <div class="glass-panel" style="flex: 1; min-height: 250px; padding: 0; position: relative; overflow: hidden; display: flex; justify-content: center; align-items: center; border-radius: var(--radius-md); background: #04070d;">
           <canvas id="vision-canvas" width="800" height="480" style="width: 100%; height: 100%; object-fit: contain;"></canvas>
           
           <!-- HUD Overlay Text -->
@@ -96,8 +96,8 @@ export function renderAiVisionEngine(container) {
 
       </div>
 
-      <!-- Right Controls & Inference Stats Sidebar (32%) -->
-      <div style="width: 360px; display: flex; flex-direction: column; gap: 16px; height: 100%;">
+      <!-- Right Controls & Inference Stats Sidebar -->
+      <div class="w-full lg:w-[340px] xl:w-[360px] flex flex-col gap-3 shrink-0 lg:h-full lg:overflow-y-auto pr-0 lg:pr-1">
         
         <!-- Segmentation Controls Card -->
         <div class="glass-panel" style="padding: 16px;">

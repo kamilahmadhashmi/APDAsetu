@@ -24,10 +24,10 @@ export function renderRoutingSolver(container) {
   const nearestHospital = locationService.getNearestHospital();
 
   container.innerHTML = `
-    <div style="display: flex; width: 100%; height: 100%; gap: 16px; padding: 16px;">
+    <div class="flex flex-col lg:flex-row w-full h-full gap-3 p-3 lg:gap-4 lg:p-4 box-border overflow-y-auto lg:overflow-hidden">
       
-      <!-- Left Solvers Controls (35%) -->
-      <div style="width: 420px; display: flex; flex-direction: column; gap: 16px; height: 100%; overflow-y: auto;">
+      <!-- Left Solvers Controls -->
+      <div class="w-full lg:w-[380px] xl:w-[420px] flex flex-col gap-3 shrink-0 lg:h-full lg:overflow-y-auto pr-0 lg:pr-1">
         
         <div class="glass-panel" style="padding: 20px;">
           <div class="panel-header" style="margin-bottom: 14px;">
@@ -111,17 +111,17 @@ export function renderRoutingSolver(container) {
 
       </div>
 
-      <!-- Right Graph Charts & Task Assignments (65%) -->
-      <div style="flex: 1; display: flex; flex-direction: column; gap: 16px; height: 100%;">
+      <!-- Right Graph Charts & Task Assignments -->
+      <div class="flex-1 flex flex-col gap-3 min-w-0 min-h-[380px] lg:min-h-0 lg:h-full overflow-y-auto">
         
         <!-- Response Time & Risk Comparison Chart -->
-        <div class="glass-panel" style="flex: 1; display: flex; flex-direction: column; padding: 20px;">
+        <div class="glass-panel" style="flex: 1; min-height: 220px; display: flex; flex-direction: column; padding: 16px;">
           <div class="panel-header" style="margin-bottom: 12px;">
             <span class="panel-title"><i data-lucide="bar-chart-2"></i> ${t('comparison_title')}</span>
             <span class="badge badge-emerald" id="badge-faster-pct">OPTIMIZING ROUTE</span>
           </div>
 
-          <div style="flex: 1; position: relative; width: 100%; min-height: 200px;">
+          <div style="flex: 1; position: relative; width: 100%; min-height: 180px;">
             <canvas id="solver-chart-canvas"></canvas>
           </div>
         </div>
@@ -132,22 +132,24 @@ export function renderRoutingSolver(container) {
             <span class="panel-title"><i data-lucide="check-square"></i> Live Fleet Allocation Queue (Backend Database)</span>
           </div>
 
-          <table style="width: 100%; border-collapse: collapse; font-size: 12px; text-align: left;">
-            <thead>
-              <tr style="border-bottom: 1px solid var(--border-color); color: var(--text-muted);">
-                <th style="padding: 8px;">Target Origin / Incident</th>
-                <th style="padding: 8px;">Assigned Rescue Unit</th>
-                <th style="padding: 8px;">Destination Hub</th>
-                <th style="padding: 8px;">Est. Transit ETA</th>
-                <th style="padding: 8px;">Dispatch Status</th>
-              </tr>
-            </thead>
-            <tbody id="solver-assignments-body">
-              <tr>
-                <td colspan="5" style="padding: 16px; text-align: center; color: var(--text-muted);">Querying live Dijkstra routing engine...</td>
-              </tr>
-            </tbody>
-          </table>
+          <div style="overflow-x: auto; width: 100%;">
+            <table style="width: 100%; min-width: 500px; border-collapse: collapse; font-size: 12px; text-align: left;">
+              <thead>
+                <tr style="border-bottom: 1px solid var(--border-color); color: var(--text-muted);">
+                  <th style="padding: 8px;">Target Origin / Incident</th>
+                  <th style="padding: 8px;">Assigned Rescue Unit</th>
+                  <th style="padding: 8px;">Destination Hub</th>
+                  <th style="padding: 8px;">Est. Transit ETA</th>
+                  <th style="padding: 8px;">Dispatch Status</th>
+                </tr>
+              </thead>
+              <tbody id="solver-assignments-body">
+                <tr>
+                  <td colspan="5" style="padding: 16px; text-align: center; color: var(--text-muted);">Querying live Dijkstra routing engine...</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
         </div>
 
       </div>

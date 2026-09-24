@@ -9,7 +9,7 @@ export function renderArchitectureExplorer(container) {
     <div style="display: flex; flex-direction: column; width: 100%; height: 100%; gap: 16px; padding: 16px; overflow-y: auto;">
       
       <!-- Top Overview Header -->
-      <div class="glass-panel" style="padding: 16px; display: flex; align-items: center; justify-content: space-between;">
+      <div class="glass-panel" style="padding: 16px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;">
         <div>
           <h2 style="font-size: 18px; font-weight: 800; color: var(--text-main); display: flex; align-items: center; gap: 8px;">
             <i data-lucide="cpu" style="color: var(--accent-cyan);"></i> ${t('arch_title')}
@@ -19,7 +19,7 @@ export function renderArchitectureExplorer(container) {
           </p>
         </div>
 
-        <div style="display: flex; gap: 12px;">
+        <div style="display: flex; gap: 8px; flex-wrap: wrap;">
           <div style="background: rgba(0,240,255,0.08); border: 1px solid rgba(0,240,255,0.2); padding: 8px 14px; border-radius: 6px; text-align: center;">
             <div style="font-size: 10px; color: var(--text-muted); text-transform: uppercase;">Ingress Throughput</div>
             <strong style="font-size: 14px; color: var(--accent-cyan);" id="arch-tput">1,480 req/sec</strong>
@@ -45,7 +45,7 @@ export function renderArchitectureExplorer(container) {
             <span class="badge badge-cyan">DUAL-MODE INGESTION</span>
           </div>
 
-          <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px;">
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
             <div class="arch-box" style="background: rgba(255,42,109,0.1); border: 1px solid rgba(255,42,109,0.3); padding: 12px; border-radius: 8px;">
               <div style="font-size: 13px; font-weight: 700; color: var(--accent-pink);">Stranded Victims</div>
               <div style="font-size: 11px; color: var(--text-muted); margin-top: 4px;">Smartphone Offline Mesh (BLE / Wi-Fi Direct)</div>
@@ -75,17 +75,17 @@ export function renderArchitectureExplorer(container) {
             <span class="badge badge-purple">FASTAPI CORE</span>
           </div>
 
-          <div style="display: flex; gap: 12px; align-items: center;">
+          <div class="flex flex-col md:flex-row gap-3 items-stretch md:items-center">
             <div style="flex: 1; background: rgba(0,0,0,0.03); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; text-align: center;">
               <strong style="color: var(--text-main); font-size: 13px;">FastAPI Gateway</strong>
               <div style="font-size: 11px; color: var(--text-muted);">Asynchronous ASGI Endpoint</div>
             </div>
-            <span style="color: var(--accent-cyan); font-weight: 700;">&rarr;</span>
+            <span style="color: var(--accent-cyan); font-weight: 700; text-align: center;">&rarr;</span>
             <div style="flex: 1; background: rgba(0,0,0,0.03); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; text-align: center;">
               <strong style="color: var(--text-main); font-size: 13px;">Auth & WebSocket Dispatcher</strong>
               <div style="font-size: 11px; color: var(--text-muted);">JWT Auth & Realtime Broadcast</div>
             </div>
-            <span style="color: var(--accent-cyan); font-weight: 700;">&rarr;</span>
+            <span style="color: var(--accent-cyan); font-weight: 700; text-align: center;">&rarr;</span>
             <div style="flex: 1; background: rgba(0,0,0,0.03); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; text-align: center;">
               <strong style="color: var(--text-main); font-size: 13px;">Message Broker</strong>
               <div style="font-size: 11px; color: var(--text-muted);">RabbitMQ / Apache Kafka</div>
@@ -102,7 +102,7 @@ export function renderArchitectureExplorer(container) {
             <span class="panel-title" style="color: var(--accent-emerald);"><i data-lucide="box"></i> ${t('layer_3')}</span>
           </div>
 
-          <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px;">
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
             
             <!-- AI/Vision Engine Card -->
             <div style="background: rgba(255,42,109,0.06); border: 1px solid rgba(255,42,109,0.25); padding: 14px; border-radius: 8px;">
@@ -147,7 +147,7 @@ export function renderArchitectureExplorer(container) {
             <span class="badge badge-amber">TACOPS USER INTERFACE</span>
           </div>
 
-          <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px;">
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
             <div style="background: rgba(0,0,0,0.03); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; text-align: center;">
               <strong style="color: var(--accent-cyan); font-size: 13px;">React + Mapbox GIS Dashboard</strong>
               <div style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">Central Command Operations</div>

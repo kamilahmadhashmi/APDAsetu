@@ -69,9 +69,11 @@ export function renderGisDashboard(container) {
 
   container.innerHTML = `
     <div class="flex-1 flex overflow-hidden relative w-full h-full">
-      
+      <!-- Mobile Drawer Backdrop -->
+      <div id="gis-drawer-backdrop" class="fixed inset-0 bg-black/50 z-20 hidden lg:hidden"></div>
+
       <!-- Active Incidents, Hospitals & Fleet Telemetry Panel (Left) -->
-      <aside class="w-96 border-r border-outline-variant bg-surface-container-lowest flex flex-col h-full z-10 shadow-sm hidden xl:flex shrink-0">
+      <aside id="gis-left-drawer" class="w-80 lg:w-96 border-r border-outline-variant bg-surface-container-lowest flex flex-col h-full z-30 shadow-xl lg:shadow-sm hidden lg:flex shrink-0 absolute lg:relative inset-y-0 left-0 bg-white">
         
         <!-- Tab Headers -->
         <div class="p-2 border-b border-outline-variant flex bg-surface gap-1">
@@ -133,7 +135,10 @@ export function renderGisDashboard(container) {
         <div class="w-full bg-surface border-b border-outline-variant px-4 py-2 flex items-center justify-between z-20 shrink-0 flex-wrap gap-2">
           
           <!-- GIS Layers Toggles -->
-          <div class="flex items-center gap-3 text-xs font-bold uppercase text-primary">
+          <div class="flex items-center gap-2 sm:gap-3 text-xs font-bold uppercase text-primary flex-wrap">
+            <button id="btn-toggle-gis-drawer" class="lg:hidden px-2 py-1 bg-surface-container-high border border-outline-variant text-[11px] font-bold uppercase flex items-center gap-1 hover:bg-slate-200 cursor-pointer text-primary" title="Toggle Incident Telemetry Drawer">
+              <span class="material-symbols-outlined text-sm">view_sidebar</span> Incidents
+            </button>
             <span class="flex items-center gap-1"><span class="material-symbols-outlined text-sm">layers</span> GIS Layers:</span>
             <label class="flex items-center gap-1 cursor-pointer">
               <input type="checkbox" id="chk-user-loc" checked class="accent-sky-600"> 👤 You (Live)
@@ -1105,6 +1110,26 @@ function updateUIForecast(forecast) {
 }
 
 function attachGisEvents() {
+  const btnToggleDrawer = document.getElementById('btn-toggle-gis-drawer');
+  const leftDrawer = document.getElementById('gis-left-drawer');
+  const drawerBackdrop = document.getElementById('gis-drawer-backdrop');
+
+  if (btnToggleDrawer && leftDrawer) {
+    const toggleDrawer = () => {
+      const isHidden = leftDrawer.classList.contains('hidden');
+      if (isHidden) {
+        leftDrawer.classList.remove('hidden');
+        if (drawerBackdrop) drawerBackdrop.classList.remove('hidden');
+      } else {
+        leftDrawer.classList.add('hidden');
+        if (drawerBackdrop) drawerBackdrop.classList.add('hidden');
+      }
+      if (map) setTimeout(() => map.invalidateSize(), 200);
+    };
+    btnToggleDrawer.addEventListener('click', toggleDrawer);
+    if (drawerBackdrop) drawerBackdrop.addEventListener('click', toggleDrawer);
+  }
+
   document.getElementById('tab-left-incidents')?.addEventListener('click', (e) => {
     setActiveTab(e.target);
     renderSidebarTab('incidents');

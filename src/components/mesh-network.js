@@ -46,10 +46,10 @@ export function renderMeshNetwork(container) {
   const bridgeStatus = hardwareMeshBridge.getStatus();
 
   container.innerHTML = `
-    <div style="display: flex; width: 100%; height: 100%; gap: 16px; padding: 16px; box-sizing: border-box; overflow: hidden;">
+    <div class="flex flex-col lg:flex-row w-full h-full gap-3 p-3 lg:gap-4 lg:p-4 box-border overflow-y-auto lg:overflow-hidden">
       
-      <!-- Left Mesh Topology Graph & Radio Control (64%) -->
-      <div style="flex: 1; display: flex; flex-direction: column; gap: 12px; height: 100%; min-width: 0;">
+      <!-- Left Mesh Topology Graph & Radio Control -->
+      <div class="flex-1 flex flex-col gap-3 min-w-0 min-h-[360px] lg:min-h-0 lg:h-full">
         
         <!-- Header Controls -->
         <div class="glass-panel" style="padding: 10px 16px; display: flex; align-items: center; justify-content: space-between; border-radius: var(--radius-md);">
@@ -107,7 +107,7 @@ export function renderMeshNetwork(container) {
         </div>
 
         <!-- Canvas Visualizer -->
-        <div class="glass-panel" style="flex: 1; padding: 0; position: relative; overflow: hidden; display: flex; justify-content: center; align-items: center; border-radius: var(--radius-md); background: #050811;">
+        <div class="glass-panel" style="flex: 1; min-height: 250px; padding: 0; position: relative; overflow: hidden; display: flex; justify-content: center; align-items: center; border-radius: var(--radius-md); background: #050811;">
           <canvas id="mesh-canvas" width="850" height="460" style="width: 100%; height: 100%; object-fit: contain;"></canvas>
           
           <div style="position: absolute; bottom: 16px; left: 16px; font-family: monospace; font-size: 11px; color: var(--accent-cyan); background: rgba(7,10,18,0.88); padding: 8px 12px; border-radius: 4px; border: 1px solid rgba(0,240,255,0.25);" id="mesh-hud-footer">
@@ -122,7 +122,7 @@ export function renderMeshNetwork(container) {
         </div>
 
         <!-- Bottom Quick Radio Action Trigger Bar -->
-        <div style="display: flex; gap: 8px; align-items: center;">
+        <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
           <span style="font-size: 11px; font-weight: 700; color: var(--text-muted); font-family: monospace;">CHIRP TRIGGERS:</span>
           <button class="btn" id="btn-quick-sos" style="padding: 4px 10px; font-size: 11px; background: #fee2e2; border-color: #ef4444; color: #991b1b;">
             <i data-lucide="alert-triangle"></i> SOS Chirp (Prio 1)
@@ -137,8 +137,8 @@ export function renderMeshNetwork(container) {
 
       </div>
 
-      <!-- Right Telemetry & Hardware Console (36%) -->
-      <div style="width: 410px; display: flex; flex-direction: column; gap: 12px; height: 100%; min-width: 410px;">
+      <!-- Right Telemetry & Hardware Console -->
+      <div class="w-full lg:w-[380px] xl:w-[410px] flex flex-col gap-3 shrink-0 lg:h-full lg:overflow-y-auto pr-0 lg:pr-1">
         
         <!-- Live Hardware RF Hex Packet Monitor -->
         <div class="glass-panel" style="padding: 12px; display: flex; flex-direction: column; gap: 8px; border-color: rgba(2,132,199,0.3);">
@@ -158,7 +158,7 @@ export function renderMeshNetwork(container) {
           </div>
 
           <!-- Scrolling Terminal Window -->
-          <div id="rf-packet-terminal" style="background: #020617; border: 1px solid #1e293b; border-radius: 4px; padding: 8px; height: 165px; overflow-y: auto; font-family: monospace; font-size: 10.5px; line-height: 1.4; display: flex; flex-direction: column; gap: 4px;">
+          <div id="rf-packet-terminal" style="background: #020617; border: 1px solid #1e293b; border-radius: 4px; padding: 8px; height: 135px; overflow-y: auto; font-family: monospace; font-size: 10.5px; line-height: 1.4; display: flex; flex-direction: column; gap: 4px;">
             <div style="color: #64748b;">// LAF v1 Over-the-air packet monitor initialized...</div>
             <div style="color: #64748b;">// Sub-GHz modulation: 868.100 MHz, SF10, BW 125kHz, CRC16-CCITT</div>
             <div style="color: #38bdf8;">[READY] Connect BLE, USB-UART, or click 'Sim LoRa' to capture radio frames.</div>
@@ -190,7 +190,7 @@ export function renderMeshNetwork(container) {
         </div>
 
         <!-- Hop Node Relay Stats Card -->
-        <div class="glass-panel" style="flex: 1; display: flex; flex-direction: column; overflow: hidden; padding: 12px; min-height: 140px;">
+        <div class="glass-panel" style="flex: 1; display: flex; flex-direction: column; overflow: hidden; padding: 12px; min-height: 130px;">
           <div class="panel-header" style="margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center;">
             <span class="panel-title" style="font-size: 12px;"><i data-lucide="share-2"></i> Active Mesh Nodes (Live DB)</span>
             <span class="badge badge-cyan" id="badge-mesh-count" style="font-size: 10px;">CONNECTING...</span>
@@ -472,7 +472,7 @@ function initMeshCanvas() {
     for (let x = 0; x < meshCanvas.width; x += 40) {
       meshCtx.beginPath();
       meshCtx.moveTo(x, 0);
-      meshCtx.lineTo(meshCanvas.height);
+      meshCtx.lineTo(x, meshCanvas.height);
       meshCtx.stroke();
     }
     for (let y = 0; y < meshCanvas.height; y += 40) {
